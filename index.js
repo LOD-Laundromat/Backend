@@ -9,16 +9,17 @@ if (!fs.existsSync(config.dataDir)) throw new Error('Data directory not found: '
 if (!config.port) throw new Error('No port defined to run server on');
 if (!config.llVersion) throw new Error('No version defined to serve files for');
 if (!config.endpoint) throw new Error('No endpoint defined to query');
-
+if (!config.loggingDir) throw new Error("No logging dir specified");
+if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exist");
 
 
 		
-http.createServer(function (req, res) {  
+http.createServer(function (req, res) { 
 	if (req.url.indexOf("/data/") == 0) {
 		serveDataFile(req,res);
 	}
-	res.writeHead(400);//catchall
-	res.end();
+//	res.writeHead(400);//catchall
+//	res.end();
 }).listen(config.port);
 
 util.puts('> LOD Laundromat Backend running on ' + config.port);
@@ -27,16 +28,16 @@ var serveDataFile = function(req,res) {
 	var sendFile = function(file) {
 		var contentType = "application/x-gzip";
 		var stream = fs.createReadStream(file);
-		 
 	    stream.on('error', function(error) {
 	    	res.writeHead(500, 'Unable to send gzip file');
-	        return;
 	    });
- 
- 
+	    //I know last 6 chars are extension (either nt.gz or nq.gz). Just use this knowledge (won't change)
+	    res.setHeader('Content-disposition', 'attachment; filename=' + hash + file.slice(-6));
 	    res.setHeader('Content-Type', contentType);
 	    res.writeHead(200);
 	    stream.pipe(res);
+	    fs.appendFile(config.loggingDir + '/downloads.log', req.headers["user-agent"] + ' - ' + hash + '\n');
+	    
 	};
 	
 	
@@ -45,7 +46,6 @@ var serveDataFile = function(req,res) {
 	if (hash.length == 0) {
 		res.writeHead(406, 'No dataset defined in download request');
 		res.end();
-		return;
 	} else {
 		var datasetDir = config.dataDir + '/' + config.llVersion + '/' + hash;
 		fs.exists(datasetDir, function(datasetDirExists) {
@@ -53,7 +53,6 @@ var serveDataFile = function(req,res) {
 				console.log(datasetDir);
 				res.writeHead(404, 'Dataset not found on disk');
 				res.end();
-				return;
 			}
 			//ok, dataset directory exists. Does it have a clean file though...
 			var ntFile = datasetDir + '/clean.nt.gz';
@@ -66,7 +65,6 @@ var serveDataFile = function(req,res) {
 							//no nq file AND no nt file..
 							res.writeHead(404, 'No cleaned file found for this dataset.');
 							res.end();
-							return;
 						} else {
 							sendFile(nqFile);
 							
