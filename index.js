@@ -17,9 +17,11 @@ if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exi
 http.createServer(function (req, res) { 
 	if (req.url.indexOf("/data/") == 0) {
 		serveDataFile(req,res);
+	} else if (req.url.indexOf("/addseed/" == 0)) {
+	} else {
+		res.writeHead(400);//catchall
+		res.end();
 	}
-//	res.writeHead(400);//catchall
-//	res.end();
 }).listen(config.port);
 
 util.puts('> LOD Laundromat Backend running on ' + config.port);
