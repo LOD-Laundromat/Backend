@@ -3,7 +3,7 @@
 	"filehostingPort": 8686,
 	"seedlistPort": 8989,
 	"llVersion": 11,
-	"endpoint": "http://sparql.lodlaundromat.org/update",
+	"endpoint": "http://localhost/sparql/graph",
 	"loggingDir": "/home/lodlaundromat/log"
 
 
