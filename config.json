@@ -1,6 +1,8 @@
 {
 	"dataDir": "/scratch/lodlaundromat/",
-	"ll-version": 11
+	"port": 8686,
+	"llVersion": 11,
+	"endpoint": "http://sparql.lodlaundromat.org/update"
 
 
 
