@@ -1,6 +1,7 @@
 {
 	"dataDir": "/scratch/lodlaundromat/",
-	"port": 8686,
+	"filehostingPort": 8686,
+	"seedlistPort": 8989,
 	"llVersion": 11,
 	"endpoint": "http://sparql.lodlaundromat.org/update",
 	"loggingDir": "/home/lodlaundromat/log"

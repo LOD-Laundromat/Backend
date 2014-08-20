@@ -1,33 +1,23 @@
 var util = require('util'),  
     http = require('http'),
-	fs = require('fs');
-
-var config = require('./config.json');
+	fs = require('fs'),
+	url = require('url'),
+	path = require('path'),
+	config = require('./config.json');
 
 if (!config.dataDir) throw new Error('No data directory defined');
 if (!fs.existsSync(config.dataDir)) throw new Error('Data directory not found: ' + config.dataDir);
-if (!config.port) throw new Error('No port defined to run server on');
+if (!config.filehostingPort) throw new Error('No port defined to run  file hosting server on');
 if (!config.llVersion) throw new Error('No version defined to serve files for');
 if (!config.endpoint) throw new Error('No endpoint defined to query');
 if (!config.loggingDir) throw new Error("No logging dir specified");
 if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exist");
 
 
-		
+/**
+ * Run file hosting server
+ */
 http.createServer(function (req, res) { 
-	console.log(req.url);
-	if (req.url.indexOf("/data/") == 0) {
-		serveDataFile(req,res);
-	} else if (req.url.indexOf("/addseed/") ==  0) {
-	} else {
-		res.writeHead(400);//catchall
-		res.end();
-	}
-}).listen(config.port);
-
-util.puts('> LOD Laundromat Backend running on ' + config.port);
-
-var serveDataFile = function(req,res) {
 	var sendFile = function(file) {
 		var contentType = "application/x-gzip";
 		var stream = fs.createReadStream(file);
@@ -43,9 +33,7 @@ var serveDataFile = function(req,res) {
 	    
 	};
 	
-	
-	
-	var hash = req.url.substring("/data/".length);
+	var hash = path.basename(url.parse(req.url, true).path);
 	if (hash.length == 0) {
 		res.writeHead(406, 'No dataset defined in download request');
 		res.end();
@@ -81,6 +69,10 @@ var serveDataFile = function(req,res) {
 			
 		});
 	}
-};
+}).listen(config.filehostingPort);
+util.puts('> File hosting backend running on ' + config.filehostingPort);
 
 
+/**
+ * Run seed list updater server
+*/
