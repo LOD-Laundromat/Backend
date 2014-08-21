@@ -14,5 +14,8 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/LODLaundry/Backend/issues"
+  },
+  "dependencies": {
+    "request": "~2.40.0"
   }
 }
