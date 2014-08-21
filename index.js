@@ -6,7 +6,6 @@ var util = require('util'),
 	iri = require('node-iri'),
 	queryString = require('querystring'),
 	seedlistUpdater = require('./sendSeedItem.js'),
-	checkSeedExists = require('./checkSeedExists.js'),
 	config = require('./config.json');
 
 if (!config.fileHosting.dataDir) throw new Error('No data directory defined');
@@ -18,7 +17,7 @@ if (!config.loggingDir) throw new Error("No logging dir specified");
 if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exist");
 
 var logLine = function(filename, messages) {
-	fs.appendFile(config.loggingDir + '/' + filename, new Date().toString + ' - ' + messages.join(' - ') + '\n');
+	fs.appendFile(config.loggingDir + '/' + filename, new Date().toString() + ' - ' + messages.join(' - ') + '\n');
 };
 
 

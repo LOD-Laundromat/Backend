@@ -9,29 +9,24 @@
 //ttp://rod.eionet.europa.eu/issues
 
 
-var fs = require('fs')
+var fs = require('fs'),
 	http = require('http'),
 	queryString = require('querystring');
 /**
  * Check and validate file
  */
 var filename = 'url.data';
-if (!fs.existsSync(filename)) {
-	if (process.argv.length <= 2) {
-		console.log("No file to import. Pass one as argument");
-		process.exit(1);
-	} else {
-		filename = process.argv[2];
-		if (!fs.existsSync(filename)) {
-			console.log("File " + filename + " does not exist");
-			process.exit(1);
-		}
-	}
+if (process.argv.length > 2) {
+	filename = process.argv[2];
 }
-
+if (!fs.existsSync(filename)) {
+	console.log("File " + filename + " does not exist. Specify an argument");
+	process.exit(1);
+}
 var seeds = fs.readFileSync(filename).toString().split("\n");
 for (var i in seeds) {
-	http.get("http://backend.lodlaundromat.org?" + queryString.stringify({url: seeds[i]}), function(res) {
-		console.log(res.statusCode);
+	var request = require('request');
+	request.get("http://backend.lodlaundromat.org?" + queryString.stringify({url: seeds[i]}), function (error, response, body) {
+	    console.log(response.statusCode);
 	});
 };
