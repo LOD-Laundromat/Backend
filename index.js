@@ -6,6 +6,7 @@ var util = require('util'),
 	iri = require('node-iri'),
 	queryString = require('querystring'),
 	seedlistUpdater = require('./sendSeedItem.js'),
+	checkSeedExists = require('./checkSeedExists.js'),
 	config = require('./config.json');
 
 if (!config.fileHosting.dataDir) throw new Error('No data directory defined');
@@ -98,30 +99,6 @@ http.createServer(function (req, res) {
 		return;
 	}
 	
-	var seedAdded = function(seed, callback) {
-		var query = "PREFIX ll: <http://lodlaundromat.org/vocab#> \n"+
-			"ASK { [] ll:url <" + seed + "> ;\n" +
-			"	ll:added [] .}";
-		http.get(config.seedlistUpdater.sparqlEndpoint + "?" + queryString.stringify({query: query}),
-				function(response) {
-			if (response.statusCode != 200) {
-				callback(null);
-			} else {
-				var body = '';
-				response.on('data', function(chunk) {
-					body += chunk;
-				});
-				response.on('end', function() {
-					if (body.toLowerCase() == "true") {
-						callback(true);
-					} else {
-						callback(false);
-					}
-				});
-			}
-		});
-	};
-	
 	var seed = (url.parse(req.url, true).query).url;
 	if (seed) {
 		seed = new iri.IRI(seed).toURIString();
@@ -135,7 +112,7 @@ http.createServer(function (req, res) {
 		//validate seed
 		if (seed.indexOf('http') == 0) {
 			//only pass along the parsed href! (this avoids injection into our turtle insert)
-			seedAdded(seed, function(alreadyAdded) {
+			checkSeedExists(seed, function(alreadyAdded) {
 				if (alreadyAdded === null) {
 					//hmz, something went wrong with checking whether it was already added.
 					res.writeHead(500, 'SPARQL query failed: Unable to check whether this seed was already added: ' + seed);
