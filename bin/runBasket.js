@@ -33,12 +33,5 @@ var seeds = fs.readFileSync(filename).toString().split("\n");
 for (var i in seeds) {
 	http.get("http://backend.lodlaundromat.org?" + queryString.stringify({url: seeds[i]}), function(res) {
 		console.log(res.statusCode);
-		var body = '';
-		  res.on('data', function(chunk) {
-		    body += chunk;
-		  });
-		  res.on('end', function() {
-		    console.log(body);
-		  });
 	});
 };
