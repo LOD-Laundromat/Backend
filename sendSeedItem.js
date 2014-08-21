@@ -8,14 +8,13 @@ var 	config = require('./config.json'),
 
 module.exports = function(seedUrl, callback) {
     var getTurtle = function() {
-    	return 
-"@prefix ll : <http://lodlaundromat.org/vocab#> .\n\
-<http://lodlaundromat.org/vocab#" + md5(seedUrl) +"> ll:md5 \"" + md5(seedUrl) + "\"^^xsd:string ;\n\
-    ll:url <" + seedUrl + "> ;\n\
-    ll:added \"" + new Date().toString() + "\"^^xsd:dateTime .";
+    	return "@prefix ll: <http://lodlaundromat.org/vocab#> . \
+<http://lodlaundromat.org/vocab#" + md5(seedUrl) +"> ll:md5 \"" + md5(seedUrl) + "\"^^xsd:string ; \
+    ll:url <" + seedUrl + "> ; \
+    ll:added \"" + xsdDateTime() + "\"^^xsd:dateTime .";
     };
     
-    
+    console.log(getTurtle());
     var options = {
 	url: config.seedlistUpdater.graphApi + '?' + queryString.stringify({"graph-uri": config.seedlistUpdater.namedGraph}),
 	headers: {
@@ -24,15 +23,39 @@ module.exports = function(seedUrl, callback) {
 	method: 'POST',
 	body: getTurtle()
     };
+    console.log(options);
    request(options, function(err, response, body){
 		if (err) {
 		    callback(false, err.toString());
-		} else if (response.statusCode != 200) {
-		    callback(false, body);
-		} else {
+		} else if (response.statusCode >= 200 && response.statusCode < 300) {
 		    callback(true);
+		} else {
+		    console.log(response.statusCode);
+		    callback(false, body);
 		}
     });
 };
 
-//module.exports("http://test");
+//module.exports("http://test", function(a,b){
+//    console.log(a,b);
+//});
+
+/**
+* taken from http://forums.whirlpool.net.au/archive/1218957
+*/
+function xsdDateTime(date) {
+    if (!date) date = new Date();
+    function pad(n) {
+	var s = n.toString();
+	return s.length < 2 ? '0'+s : s;
+    };
+    
+    var yyyy = date.getFullYear();
+    var mm1  = pad(date.getMonth()+1);
+    var dd   = pad(date.getDate());
+    var hh   = pad(date.getHours());
+    var mm2  = pad(date.getMinutes());
+    var ss   = pad(date.getSeconds());
+
+    return yyyy +'-' +mm1 +'-' +dd +'T' +hh +':' +mm2 +':' +ss;
+}
