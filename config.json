@@ -8,6 +8,7 @@
 	"seedlistUpdater": {
 		"port": 8989,
 		"graphApi": "http://localhost/sparql/graph",
-		"namedGraph": "http://lodlaundromat.org#seedlist"
+		"namedGraph": "http://lodlaundromat.org#seedlist",
+		"sparqlEndpoint": "http://sparql.backend.lodlaundromat.org"
 	}
 }

@@ -4,6 +4,7 @@ var util = require('util'),
 	url = require('url'),
 	path = require('path'),
 	iri = require('node-iri'),
+	queryString = require('querystring'),
 	seedlistUpdater = require('./sendSeedItem.js'),
 	config = require('./config.json');
 
@@ -46,7 +47,6 @@ http.createServer(function (req, res) {
 		var datasetDir = config.fileHosting.dataDir + '/' + config.fileHosting.llVersion + '/' + hash;
 		fs.exists(datasetDir, function(datasetDirExists) {
 			if (!datasetDirExists) {
-				console.log(datasetDir);
 				res.writeHead(404, 'Dataset not found on disk');
 				res.end();
 			}
@@ -87,41 +87,63 @@ if (!config.seedlistUpdater.graphApi) throw new Error('No graph API URL defined 
 if (!config.seedlistUpdater.namedGraph) throw new Error('No named graph defined to store new seed list items in');
 if (!config.seedlistUpdater.port) throw new Error('No port defined to run seed list API on');
 http.createServer(function (req, res) {
-	var seedAdded = function(callback) {
-		callback(false);
+	var seedAdded = function(seed, callback) {
+		var query = "PREFIX ll: <http://lodlaundromat.org/vocab#> \n"+
+			"ASK { [] ll:url <" + seed + "> ;\n" +
+			"	ll:added [] .}";
+		http.get(config.seedlistUpdater.sparqlEndpoint + "?" + queryString.stringify({query: query}),
+				function(response) {
+			if (response.statusCode != 200) {
+				callback(null);
+			} else {
+				var body = '';
+				response.on('data', function(chunk) {
+					body += chunk;
+				});
+				response.on('end', function() {
+					if (body.toLowerCase() == "true") {
+						callback(true);
+					} else {
+						callback(false);
+					}
+				});
+			}
+		});
 	};
-	var seed = (url.parse(req.url, true).query).url;
-	if (seed) seed = new iri.IRI(seed).toURIString();
 	
-	if (!seed || seed.trim().length == 0) {
+	var seed = (url.parse(req.url, true).query).url;
+	if (seed) {
+		seed = new iri.IRI(seed).toURIString();
+		seed = seed.trim();
+	}
+	if (!seed || seed.length == 0) {
 		res.writeHead(400, 'No seed item given as argument');
 		res.end();
 		logLine('faultySeeds.log', [req.headers["user-agent"],seed]);
 	} else {
-		var parsedSeed = url.parse(seed.trim());
 		//validate seed
-		if (parsedSeed.protocol && parsedSeed.protocol.indexOf('http') == 0) {
+		if (seed.indexOf('http') == 0) {
 			//only pass along the parsed href! (this avoids injection into our turtle insert)
-			seedAdded(parsedSeed.href, function(alreadyAdded) {
+			seedAdded(seed, function(alreadyAdded) {
 				if (alreadyAdded === null) {
 					//hmz, something went wrong with checking whether it was already added.
-					res.writeHead(500, 'SPARQL query failed: Unable to check whether this seed was already added: ' + parsedSeed.href);
+					res.writeHead(500, 'SPARQL query failed: Unable to check whether this seed was already added: ' + seed);
 					res.end();
 				} else if (alreadyAdded) {
-					res.writeHead(400, 'This seed is already in our list: ' + parsedSeed.href);
+					res.writeHead(400, 'This seed is already in our list: ' + seed);
 					res.end();
-					logLine('alreadyAddedSeeds.log', [req.headers["user-agent"],parsedSeed.href]);
+					logLine('alreadyAddedSeeds.log', [req.headers["user-agent"],seed]);
 				} else {
-					seedlistUpdater(parsedSeed.href, function(success, body) {
+					seedlistUpdater(seed, function(success, body) {
 						if (success) {
-							res.writeHead(202, 'Successfully added ' + parsedSeed.href + ' to the seed list');
+							res.writeHead(202, 'Successfully added ' + seed + ' to the seed list');
 							res.end();
 						} else {
-							res.writeHead(500, 'Failed to add ' + parsedSeed.href + " to the seed list");
+							res.writeHead(500, 'Failed to add ' + seed + " to the seed list");
 							if (body) res.write(body);
 							res.end();
 						}
-						logLine('addedSeeds.log', [req.headers["user-agent"],parsedSeed.href]);
+						logLine('addedSeeds.log', [req.headers["user-agent"],seed]);
 					});
 				}
 			});
