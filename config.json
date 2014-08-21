@@ -1,11 +1,13 @@
 {
-	"dataDir": "/scratch/lodlaundromat/",
-	"filehostingPort": 8686,
-	"seedlistPort": 8989,
-	"llVersion": 11,
-	"endpoint": "http://localhost/sparql/graph",
-	"loggingDir": "/home/lodlaundromat/log"
-
-
-
+	"loggingDir": "/home/lodlaundromat/log",
+	"fileHosting": {
+		"port": 8686,
+		"dataDir": "/scratch/lodlaundromat/",
+		"llVersion": 11
+	},
+	"seedlistUpdater": {
+		"port": 8989,
+		"graphApi": "http://localhost/sparql/graph",
+		"namedGraph": "http://lodlaundromat.org#seedlist"
+	}
 }
