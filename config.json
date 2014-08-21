@@ -1,5 +1,5 @@
 {
-	"loggingDir": "/home/lodlaundromat/log",
+	"loggingDir": "/home/lrd900/logs",
 	"fileHosting": {
 		"port": 8686,
 		"dataDir": "/scratch/lodlaundromat/",

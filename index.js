@@ -6,6 +6,7 @@ var util = require('util'),
 	iri = require('node-iri'),
 	queryString = require('querystring'),
 	seedlistUpdater = require('./sendSeedItem.js'),
+	checkSeedExists = require('./checkSeedExists.js'),
 	config = require('./config.json');
 
 if (!config.fileHosting.dataDir) throw new Error('No data directory defined');

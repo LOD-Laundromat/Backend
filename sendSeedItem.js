@@ -14,7 +14,6 @@ module.exports = function(seedUrl, callback) {
     ll:added \"" + xsdDateTime() + "\"^^xsd:dateTime .";
     };
     
-    console.log(getTurtle());
     var options = {
 	url: config.seedlistUpdater.graphApi + '?' + queryString.stringify({"graph-uri": config.seedlistUpdater.namedGraph}),
 	headers: {
@@ -23,14 +22,12 @@ module.exports = function(seedUrl, callback) {
 	method: 'POST',
 	body: getTurtle()
     };
-    console.log(options);
    request(options, function(err, response, body){
 		if (err) {
 		    callback(false, err.toString());
 		} else if (response.statusCode >= 200 && response.statusCode < 300) {
 		    callback(true);
 		} else {
-		    console.log(response.statusCode);
 		    callback(false, body);
 		}
     });
