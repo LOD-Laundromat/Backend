@@ -26,4 +26,3 @@ module.exports = function(seedUrl, callback) {
     });
 };
 
-module.exports();
