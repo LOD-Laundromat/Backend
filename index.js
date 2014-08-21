@@ -99,11 +99,11 @@ http.createServer(function (req, res) {
 			//only pass along the parsed href! (this avoids injection into our turtle insert)
 			seedlistUpdater(parsedSeed.href, function(success, body) {
 				if (success) {
-					res.writeHead(200, 'Successfully added ' + parsedSeed.href + ' to the seed list');
-					
+					res.writeHead(202, 'Successfully added ' + parsedSeed.href + ' to the seed list');
+					res.end();
 				} else {
 					res.writeHead(500, 'Failed to add ' + parsedSeed.href + " to the seed list");
-					res.write(body);
+					if (body) res.write(body);
 					res.end();
 				}
 				

@@ -6,18 +6,21 @@ var 	config = require('./config.json'),
 
 
 module.exports = function(seedUrl, callback) {
+    var getNtriple() {
+	return "<http://test111> <http://test222> \"" + seedUrl + "\" .";
+    }
     var options = {
-	url: config.endpoint + '?' + queryString.stringify({"graph-uri": "http://lodlaundromat.org#seedlist"}),
+	url: config.seedlistUpdater.graphApi + '?' + queryString.stringify({"graph-uri": config.seedlistUpdater.namedGraph}),
 	headers: {
             'Content-Type': 'text/turtle'
 	},
 	method: 'POST',
-	body: "<http://test111> <http://test222> <http://test333> ."
+	body: getNtriple()
     };
-    
-    var req = request(options, function(err, response, body){
+    console.log(options);    var req = request(options, function(err, response, body){
+	console.log(err);
 	if (err) {
-	    callback(false, body);
+	    callback(false, err.toString());
 	} else if (response.statusCode != 200) {
 	    callback(false, body);
 	} else {
