@@ -87,6 +87,17 @@ if (!config.seedlistUpdater.graphApi) throw new Error('No graph API URL defined 
 if (!config.seedlistUpdater.namedGraph) throw new Error('No named graph defined to store new seed list items in');
 if (!config.seedlistUpdater.port) throw new Error('No port defined to run seed list API on');
 http.createServer(function (req, res) {
+	// Set CORS headers
+	res.setHeader('Access-Control-Allow-Origin', '*');
+	res.setHeader('Access-Control-Request-Method', '*');
+	res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
+	res.setHeader('Access-Control-Allow-Headers', '*');
+	if ( req.method === 'OPTIONS' ) {
+		res.writeHead(200);
+		res.end();
+		return;
+	}
+	
 	var seedAdded = function(seed, callback) {
 		var query = "PREFIX ll: <http://lodlaundromat.org/vocab#> \n"+
 			"ASK { [] ll:url <" + seed + "> ;\n" +
