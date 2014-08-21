@@ -3,6 +3,7 @@ var util = require('util'),
 	fs = require('fs'),
 	url = require('url'),
 	path = require('path'),
+	iri = require('node-iri'),
 	seedlistUpdater = require('./sendSeedItem.js'),
 	config = require('./config.json');
 
@@ -14,7 +15,9 @@ if (!config.fileHosting.llVersion) throw new Error('No version defined to serve 
 if (!config.loggingDir) throw new Error("No logging dir specified");
 if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exist");
 
-
+var logLine = function(filename, messages) {
+	fs.appendFile(config.loggingDir + '/' + filename, new Date().toString + ' - ' + messages.join(' - ') + '\n');
+};
 
 
 /**
@@ -32,8 +35,7 @@ http.createServer(function (req, res) {
 	    res.setHeader('Content-Type', contentType);
 	    res.writeHead(200);
 	    stream.pipe(res);
-	    fs.appendFile(config.loggingDir + '/downloads.log', req.headers["user-agent"] + ' - ' + hash + '\n');
-	    
+	    logLine('downloads.log',  [req.headers["user-agent"],hash]);
 	};
 	
 	var hash = path.basename(url.parse(req.url, true).path);
@@ -84,33 +86,49 @@ util.puts('> File hosting backend running on ' + config.fileHosting.port);
 if (!config.seedlistUpdater.graphApi) throw new Error('No graph API URL defined to send new seed list items to');
 if (!config.seedlistUpdater.namedGraph) throw new Error('No named graph defined to store new seed list items in');
 if (!config.seedlistUpdater.port) throw new Error('No port defined to run seed list API on');
-http.createServer(function (req, res) { 
-//	seedlistUpdater
-
+http.createServer(function (req, res) {
+	var seedAdded = function(callback) {
+		callback(false);
+	};
 	var seed = (url.parse(req.url, true).query).url;
+	if (seed) seed = new iri.IRI(seed).toURIString();
+	
 	if (!seed || seed.trim().length == 0) {
 		res.writeHead(400, 'No seed item given as argument');
 		res.end();
+		logLine('faultySeeds.log', [req.headers["user-agent"],seed]);
 	} else {
 		var parsedSeed = url.parse(seed.trim());
 		//validate seed
-		console.log(parsedSeed);
 		if (parsedSeed.protocol && parsedSeed.protocol.indexOf('http') == 0) {
 			//only pass along the parsed href! (this avoids injection into our turtle insert)
-			seedlistUpdater(parsedSeed.href, function(success, body) {
-				if (success) {
-					res.writeHead(202, 'Successfully added ' + parsedSeed.href + ' to the seed list');
+			seedAdded(parsedSeed.href, function(alreadyAdded) {
+				if (alreadyAdded === null) {
+					//hmz, something went wrong with checking whether it was already added.
+					res.writeHead(500, 'SPARQL query failed: Unable to check whether this seed was already added: ' + parsedSeed.href);
 					res.end();
+				} else if (alreadyAdded) {
+					res.writeHead(400, 'This seed is already in our list: ' + parsedSeed.href);
+					res.end();
+					logLine('alreadyAddedSeeds.log', [req.headers["user-agent"],parsedSeed.href]);
 				} else {
-					res.writeHead(500, 'Failed to add ' + parsedSeed.href + " to the seed list");
-					if (body) res.write(body);
-					res.end();
+					seedlistUpdater(parsedSeed.href, function(success, body) {
+						if (success) {
+							res.writeHead(202, 'Successfully added ' + parsedSeed.href + ' to the seed list');
+							res.end();
+						} else {
+							res.writeHead(500, 'Failed to add ' + parsedSeed.href + " to the seed list");
+							if (body) res.write(body);
+							res.end();
+						}
+						logLine('addedSeeds.log', [req.headers["user-agent"],parsedSeed.href]);
+					});
 				}
-				
 			});
 		} else {
 			res.writeHead(400, 'The seed item is not a URI: ' + seed);
 			res.end();
+			logLine('faultySeeds.log', [req.headers["user-agent"],seed]);
 		}
 	}
 	

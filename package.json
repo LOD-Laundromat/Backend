@@ -4,7 +4,8 @@
   "description": "LOD Laundromat backed, responsible for serving files, and adding items to seed list",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "napa Acubed/node-iri"
   },
   "repository": {
     "type": "git",
@@ -17,5 +18,8 @@
   },
   "dependencies": {
     "request": "~2.40.0"
+  },
+  "devDependencies": {
+    "napa": "^0.4.1"
   }
 }
