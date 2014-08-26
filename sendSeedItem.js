@@ -8,8 +8,8 @@ var 	config = require('./config.json'),
 
 module.exports = function(seedUrl, callback) {
     var getTurtle = function() {
-    	return "@prefix ll: <http://lodlaundromat.org/vocab#> . \
-<http://lodlaundromat.org/vocab#" + md5(seedUrl) +"> ll:md5 \"" + md5(seedUrl) + "\"^^xsd:string ; \
+    	return "@prefix ll: <http://lodlaundromat.org/ontology/> . \
+<http://lodlaundromat.org/resource/" + md5(seedUrl) +"> ll:md5 \"" + md5(seedUrl) + "\"^^xsd:string ; \
     ll:url <" + seedUrl + "> ; \
     ll:added \"" + xsdDateTime() + "\"^^xsd:dateTime .";
     };

@@ -99,9 +99,9 @@ http.createServer(function (req, res) {
 	}
 	
 	var seedAdded = function(seed, callback) {
-		var query = "PREFIX ll: <http://lodlaundromat.org/vocab#> \n"+
-			"ASK { [] ll:url <" + seed + "> ;\n" +
-			"	ll:added [] .}";
+		var query = "PREFIX llo: <http://lodlaundromat.org/ontology/> \n"+
+			"ASK { [] llo:url <" + seed + "> ;\n" +
+			"	llo:added [] .}";
 		http.get(config.seedlistUpdater.sparqlEndpoint + "?" + queryString.stringify({query: query}),
 				function(response) {
 			if (response.statusCode != 200) {
