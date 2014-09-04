@@ -20,7 +20,14 @@ var logLine = function(filename, messages) {
 	fs.appendFile(config.loggingDir + '/' + filename, new Date().toString() + ' - ' + messages.join(' - ') + '\n');
 };
 
-
+var onError = function(response, statusCode, reasonPhrase) {
+	response.writeHead(statusCode, {
+	  'Content-Length': reasonPhrase.length,
+	  'Content-Type': 'text/plain' 
+	});
+	response.write(reasonPhrase);
+	response.end();
+};
 /**
  * Run file hosting server
  */
@@ -29,7 +36,8 @@ http.createServer(function (req, res) {
 		var contentType = "application/x-gzip";
 		var stream = fs.createReadStream(file);
 	    stream.on('error', function(error) {
-	    	res.writeHead(500, 'Unable to send gzip file');
+	    	onError(res, 500, 'Unable to send gzip file');
+	    	
 	    });
 	    //I know last 6 chars are extension (either nt.gz or nq.gz). Just use this knowledge (won't change)
 	    res.setHeader('Content-disposition', 'attachment; filename=' + hash + file.slice(-6));
@@ -41,14 +49,12 @@ http.createServer(function (req, res) {
 	
 	var hash = path.basename(url.parse(req.url, true).path);
 	if (hash.length == 0) {
-		res.writeHead(406, 'No dataset defined in download request');
-		res.end();
+		onError(res,406, 'No dataset defined in download request. To download a file, use the SPARQL endpoint or web interface to get the hash ID, and download the file using http://download.lodlaundromat.org/<md5>');
 	} else {
 		var datasetDir = config.fileHosting.dataDir + '/' + config.fileHosting.llVersion + '/' + hash;
 		fs.exists(datasetDir, function(datasetDirExists) {
 			if (!datasetDirExists) {
-				res.writeHead(404, 'Dataset not found on disk');
-				res.end();
+				onError(res,404, 'Dataset not found');
 			}
 			//ok, dataset directory exists. Does it have a clean file though...
 			var ntFile = datasetDir + '/clean.nt.gz';
@@ -59,8 +65,7 @@ http.createServer(function (req, res) {
 					fs.exists(nqFile, function(nqFileExists) {
 						if (!nqFileExists) {
 							//no nq file AND no nt file..
-							res.writeHead(404, 'No cleaned file found for this dataset.');
-							res.end();
+							onError(res,404, 'No cleaned file found for this dataset.');
 						} else {
 							sendFile(nqFile);
 							
@@ -128,8 +133,7 @@ http.createServer(function (req, res) {
 		seed = seed.trim();
 	}
 	if (!seed || seed.length == 0) {
-		res.writeHead(400, 'No seed item given as argument');
-		res.end();
+		onError(res, 400, 'No seed item given as argument');
 		logLine('faultySeeds.log', [req.headers["user-agent"],seed]);
 	} else {
 		//validate seed
@@ -138,11 +142,9 @@ http.createServer(function (req, res) {
 			seedAdded(seed, function(alreadyAdded) {
 				if (alreadyAdded === null) {
 					//hmz, something went wrong with checking whether it was already added.
-					res.writeHead(500, 'SPARQL query failed: Unable to check whether this seed was already added: ' + seed);
-					res.end();
+					onError(res,500, 'SPARQL query failed: Unable to check whether this seed was already added: ' + seed);
 				} else if (alreadyAdded) {
-					res.writeHead(400, 'This seed is already in our list: ' + seed);
-					res.end();
+					onError(res,400, 'This seed is already in our list: ' + seed);
 					logLine('alreadyAddedSeeds.log', [req.headers["user-agent"],seed]);
 				} else {
 					seedlistUpdater(seed, function(success, body) {
@@ -159,8 +161,7 @@ http.createServer(function (req, res) {
 				}
 			});
 		} else {
-			res.writeHead(400, 'The seed item is not a URI: ' + seed);
-			res.end();
+			onError(res,400, 'The seed item is not a URI: ' + seed);
 			logLine('faultySeeds.log', [req.headers["user-agent"],seed]);
 		}
 	}
