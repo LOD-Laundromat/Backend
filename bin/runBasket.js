@@ -27,6 +27,10 @@ var seeds = fs.readFileSync(filename).toString().split("\n");
 for (var i in seeds) {
 	var request = require('request');
 	request.get("http://backend.lodlaundromat.org?" + queryString.stringify({url: seeds[i]}), function (error, response, body) {
-	    console.log(response.statusCode);
+	    if (response) {
+		console.log(response.statusCode);
+	    } else {
+		console.log("no response");
+	    }
 	});
 };
