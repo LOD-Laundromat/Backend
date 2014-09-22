@@ -25,26 +25,38 @@ var defaults = {
 	type: "url",
 };
 var lazySeeds = {
-	url: {},
-	archive: {}
+	url: [],
+	archive: []
 };
 var latestLazyAdded = {
 	url: null,
 	archive: null
 };
 var addLazySeed = function(res,args) {
-	lazySeeds[args.type][args.url] = [args.from];
+	lazySeeds[args.type].push({url: args.url, from: args.from});
 	latestLazyAdded[args.type] = new Date();
 	utils.sendReponse(res,202, 'Added lazy arg ' + args.url + ' to be added to seed list later');
 };
 
+var makeSeedsUnique = function(seeds) {
+	var checkedUrls = {};
+	var uniqueSeeds = [];
+	for (var i = 0; i < seeds.length; i++) {
+		var url = seeds[i].url;
+		if (!checkedUrls[url]) {
+			checkedUrls[url] = true;
+			uniqueSeeds = seeds[i];
+		}
+	}
+	return uniqueSeeds;
+};
 
 var addSeeds = function(req, res, type, seeds) {
-	var urls = [];
-	for (var url in seeds) urls.push(url);
+	
+	seeds = makeSeedsUnique(seeds);
 	var query = "PREFIX llo: <http://lodlaundromat.org/ontology/> \n SELECT * WHERE {\n";
-	for (var i = 0; i < urls.length; i++ ){
-		query += "BIND ( EXISTS {[] llo:url  <" + urls[i] + "> } AS ?" + i + " ) .\n";
+	for (var i = 0; i < seeds.length; i++ ){
+		query += "BIND ( EXISTS {[] llo:url  <" + seeds[i].url + "> } AS ?" + i + " ) .\n";
 	}
 	query += "}";
 	request.post({url: config.seedlistUpdater.sparqlEndpoint, headers: { "Accept": "application/json"}, form: {query: query}}, function(error, response, body) {
@@ -58,7 +70,7 @@ var addSeeds = function(req, res, type, seeds) {
 			var seedsToAdd = {};
 			var seedNum = 0;
 			for (var i = 0; i < urls.length; i++) {
-				var url = urls[i];
+				var url = seeds[i].url;
 				//just have 1 row of bindings
 				if (sparqlJson.results.bindings[0][i].value == "0") {
 					seedNum++;
@@ -124,9 +136,7 @@ http.createServer(function (req, res) {
 				addLazySeed(res, args);
 				return;
 			} else {
-				var param = {};
-				param[args["url"]] = args["from"];
-				addSeeds(req, res, args.type, param);
+				addSeeds(req, res, [{url: args["url"], from: args["from"]}], param);
 				
 			}
 		} else {
@@ -148,16 +158,16 @@ function sleep(seconds, callback) {
 
 var checkLazyList = function() {
 	sleep(config.seedlistUpdater.checkLazyListInterval, function() {
-		if (Object.keys(lazySeeds.url).length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.url && (new Date() - latestLazyAdded.url) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
-			var urlLazySeeds = JSON.parse(JSON.stringify(lazySeeds.url));//clone
-			lazySeeds.url = {};
+		if (lazySeeds.url.length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.url && (new Date() - latestLazyAdded.url) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
+			var urlLazySeeds = lazySeeds.url.slice(0,config.seedlistUpdater.maxSeedlistSize);//clone
+			lazySeeds.url = lazySeeds.url.slice(config.seedlistUpdater.maxSeedlistSize);
 			
 			addSeeds(null,null,"url", urlLazySeeds);
 			latestLazyAdded.url = null;
 		}
-		if (Object.keys(lazySeeds.archive).length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.archive && (new Date() - latestLazyAdded.archive) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
-			var archiveLazySeeds = JSON.parse(JSON.stringify(lazySeeds.archive));//clone
-			lazySeeds.archive = {};
+		if (lazySeeds.archive.length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.archive && (new Date() - latestLazyAdded.archive) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
+			var archiveLazySeeds = lazySeeds.archive.slice(0,config.seedlistUpdater.maxSeedlistSize);//clone
+			lazySeeds.archive = lazySeeds.archive.slice(config.seedlistUpdater.maxSeedlistSize);
 			addSeeds(null,null,"archive", archiveLazySeeds);
 			latestLazyAdded.archive = null;
 		}
