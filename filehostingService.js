@@ -31,7 +31,7 @@ http.createServer(function (req, res) {
 	    res.setHeader('Content-Type', contentType);
 	    res.writeHead(200);
 	    stream.pipe(res);
-	    logLine('downloads.log',  [req.headers["user-agent"],hash]);
+	    utils.logline('downloads.log',  [req.headers["user-agent"],hash]);
 	};
 	
 	var hash = path.basename(url.parse(req.url, true).path);

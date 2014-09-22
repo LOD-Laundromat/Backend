@@ -25,9 +25,7 @@ module.exports = function(type, seeds, callback) {
 	method: 'POST',
 	body: getTurtle()
     };
-    console.log(options);
    request(options, function(err, response, body){
-	   console.log(err, body);
 		if (err) {
 		    callback(false, err.toString());
 		} else if (response.statusCode >= 200 && response.statusCode < 300) {

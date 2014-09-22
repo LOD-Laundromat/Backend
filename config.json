@@ -12,7 +12,7 @@
 		"seedlistGraph": "http://lodlaundromat.org#seedlist",
 		"washingMachineGraph": "http://lodlaundromat.org#",
 		"sparqlEndpoint": "http://sparql.backend.lodlaundromat.org",
-		"maxSeedlistSize": 200,
+		"maxSeedlistSize": 100,
 		"maxSeedlistTime": 3600,
 		"checkLazyListInterval": 60
 	}

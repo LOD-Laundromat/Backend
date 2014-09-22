@@ -26,7 +26,7 @@ if (!fs.existsSync(filename)) {
 var seeds = fs.readFileSync(filename).toString().split("\n");
 for (var i in seeds) {
 	var request = require('request');
-	request.get("http://backend.lodlaundromat.org?" + queryString.stringify({url: seeds[i]}), function (error, response, body) {
+	request.get("http://backend.lodlaundromat.org?" + queryString.stringify({lazy: "1", url: seeds[i]}), function (error, response, body) {
 	    if (response) {
 		console.log(response.statusCode);
 	    } else {

@@ -49,6 +49,8 @@ var addSeeds = function(req, res, type, seeds) {
 	query += "}";
 	request.post({url: config.seedlistUpdater.sparqlEndpoint, headers: { "Accept": "application/json"}, form: {query: query}}, function(error, response, body) {
 		if (response.statusCode != 200) {
+			console.log(query);
+			console.log(error, body);
 			utils.sendReponse(res,500, 'SPARQL query failed: Unable to check whether the seed item(s) was/were already added');
 		} else {
 			
@@ -146,19 +148,20 @@ function sleep(seconds, callback) {
 
 var checkLazyList = function() {
 	sleep(config.seedlistUpdater.checkLazyListInterval, function() {
-		if (lazySeeds.url.length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.url && (new Date() - latestLazyAdded.url) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
+		if (Object.keys(lazySeeds.url).length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.url && (new Date() - latestLazyAdded.url) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
 			var urlLazySeeds = JSON.parse(JSON.stringify(lazySeeds.url));//clone
 			lazySeeds.url = {};
-			processLazySeeds("url", urlLazySeeds);
+			
+			addSeeds(null,null,"url", urlLazySeeds);
+			latestLazyAdded.url = null;
 		}
-		if (lazySeeds.archive.length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.archive && (new Date() - latestLazyAdded.archive) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
+		if (Object.keys(lazySeeds.archive).length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.archive && (new Date() - latestLazyAdded.archive) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
 			var archiveLazySeeds = JSON.parse(JSON.stringify(lazySeeds.archive));//clone
 			lazySeeds.archive = {};
-			processLazySeeds("archive", archiveLazySeeds);
+			addSeeds(null,null,"archive", archiveLazySeeds);
+			latestLazyAdded.archive = null;
 		}
 		checkLazyList();//does another sleep
 	});
-};
-var processLazySeeds = function(type, seeds) {
 };
 checkLazyList();
