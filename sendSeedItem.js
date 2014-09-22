@@ -6,23 +6,28 @@ var 	config = require('./config.json'),
 
 
 
-module.exports = function(seedUrl, callback) {
+module.exports = function(type, seeds, callback) {
     var getTurtle = function() {
-    	return "@prefix ll: <http://lodlaundromat.org/ontology/> . \
-<http://lodlaundromat.org/resource/" + md5(seedUrl) +"> ll:md5 \"" + md5(seedUrl) + "\"^^xsd:string ; \
-    ll:url <" + seedUrl + "> ; \
-    ll:added \"" + xsdDateTime() + "\"^^xsd:dateTime .";
+    	var turtle = "@prefix llo: <http://lodlaundromat.org/ontology/> .\n";
+    	for (var url in seeds) {
+    		turtle += "<http://lodlaundromat.org/resource/" + md5(url) +"> llo:md5 \"" + md5(url) + "\"^^xsd:string ;\n";
+    		turtle += "llo:url <" + url + "> ;\n";
+    		turtle += "llo:added \"" + xsdDateTime() + "\"^^xsd:dateTime .\n";
+    	}
+    	return turtle;
     };
-    
+    var addToGraph = (type == "url"? config.seedlistUpdater.seedlistGraph: config.seedlistUpdater.washingMachineGraph + config.seedlistUpdater.llVersion);
     var options = {
-	url: config.seedlistUpdater.graphApi + '?' + queryString.stringify({"graph-uri": config.seedlistUpdater.namedGraph}),
+	url: config.seedlistUpdater.graphApi + '?' + queryString.stringify({"graph-uri": addToGraph}),
 	headers: {
             'Content-Type': 'text/turtle'
 	},
 	method: 'POST',
 	body: getTurtle()
     };
+    console.log(options);
    request(options, function(err, response, body){
+	   console.log(err, body);
 		if (err) {
 		    callback(false, err.toString());
 		} else if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -33,9 +38,6 @@ module.exports = function(seedUrl, callback) {
     });
 };
 
-//module.exports("http://test", function(a,b){
-//    console.log(a,b);
-//});
 
 /**
 * taken from http://forums.whirlpool.net.au/archive/1218957

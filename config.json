@@ -6,9 +6,14 @@
 		"llVersion": 11
 	},
 	"seedlistUpdater": {
+		"llVersion": 11,
 		"port": 8989,
 		"graphApi": "http://localhost/sparql/graph",
-		"namedGraph": "http://lodlaundromat.org#seedlist",
-		"sparqlEndpoint": "http://sparql.backend.lodlaundromat.org"
+		"seedlistGraph": "http://lodlaundromat.org#seedlist",
+		"washingMachineGraph": "http://lodlaundromat.org#",
+		"sparqlEndpoint": "http://sparql.backend.lodlaundromat.org",
+		"maxSeedlistSize": 200,
+		"maxSeedlistTime": 3600,
+		"checkLazyListInterval": 60
 	}
 }

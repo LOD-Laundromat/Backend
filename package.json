@@ -17,7 +17,7 @@
     "url": "https://github.com/LODLaundry/Backend/issues"
   },
   "dependencies": {
-    "request": "~2.40.0",
+    "request": "^2.40.0",
     "MD5": "^1.2.1"
   },
   "devDependencies": {
