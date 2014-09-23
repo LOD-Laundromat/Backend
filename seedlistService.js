@@ -51,55 +51,65 @@ var makeSeedsUnique = function(seeds) {
 	return uniqueSeeds;
 };
 
+var checkSeedAlreadyAdded = function(seedUrl, callback) {
+	var query = "PREFIX llo: <http://lodlaundromat.org/ontology/> \n SELECT * WHERE {\n";
+	for (var i = 0; i < seeds.length; i++ ){
+		query += "ASK {[] llo:url  <" + seeds[i].url + "> } .\n";
+	}
+	request.post({url: config.seedlistUpdater.sparqlEndpoint, headers: { "Accept": "text/plain"}, form: {query: query}}, function(error, response, body) {
+		console.log(body);
+		process.exit(1);
+		if (response.statusCode != 200) {
+			callback(null);
+		} else {
+			callback(body.toLowerCase() == "true");
+		}
+	});
+};
+var checkSeedsAlreadyAdded = function(seeds, i, finalCallback) {
+	var seedsToAdd = [];
+	if (seeds[i]) {
+		checkSeedAlreadyAdded(seeds[i].url, function(alreadyAdded) {
+			if (alreadyAdded != null && alreadyAdded == true) seedsToAdd.push(seeds[i]);
+			checkSeedsAlreadyAdded(seeds, i+1, finalCallback);
+			
+		});
+	} else {
+		//we've reached the end
+		finalCallback(seedsToAdd);
+	}
+};
+
 var addSeeds = function(req, res, type, seeds) {
 	
 	seeds = makeSeedsUnique(seeds);
-	var query = "PREFIX llo: <http://lodlaundromat.org/ontology/> \n SELECT * WHERE {\n";
-	for (var i = 0; i < seeds.length; i++ ){
-		query += "BIND ( EXISTS {[] llo:url  <" + seeds[i].url + "> } AS ?" + i + " ) .\n";
-	}
-	query += "}";
-	request.post({url: config.seedlistUpdater.sparqlEndpoint, headers: { "Accept": "application/json"}, form: {query: query}}, function(error, response, body) {
-		if (response.statusCode != 200) {
-			console.log(query);
-			console.log(error, body);
-			utils.sendReponse(res,500, 'SPARQL query failed: Unable to check whether the seed item(s) was/were already added');
-		} else {
-			
-			var sparqlJson = (JSON.parse(body));
-			var seedsToAdd = {};
-			var seedNum = 0;
-			for (var i = 0; i < urls.length; i++) {
-				var url = seeds[i].url;
-				//just have 1 row of bindings
-				if (sparqlJson.results.bindings[0][i].value == "0") {
-					seedNum++;
-					seedsToAdd[url] = seeds[url];
+	checkSeedsAlreadyAdded(seeds, 0, function(seedsToAdd){
+		if (seeds.length == 1 && seedNum == 0) {
+			//just 1 url, probably a user who'd like some feedback
+			utils.sendReponse(res,400, 'This seed is already in our list: ' + seeds[0].url);
+			return;
+		} 
+		if (seeds.length > 0) {
+			seedlistUpdater(type, seedsToAdd, function(success, body) {
+				var addedUrls = [];
+				for (var url in seedsToAdd) {
+					addedUrls.push(url);
 				}
-			};
-			
-			
-			if (urls.length == 1 && seedNum == 0) {
-				//just 1 url, probably a user who'd like some feedback
-				utils.sendReponse(res,400, 'This seed is already in our list: ' + urls[0]);
-				utils.logline('alreadyAddedSeeds.log', [(req?req.headers["user-agent"]: ""),urls[0]]);
-			} else {
-				seedlistUpdater(type, seedsToAdd, function(success, body) {
-					var addedUrls = [];
-					for (var url in seedsToAdd) {
-						addedUrls.push(url);
-					}
-					if (success) {
-						utils.sendReponse(res, 202, 'Successfully added ' + (addedUrls.length == 1? addedUrls[0]: addedUrls.length + " seeds") + ' to the seed list');
-					} else {
-						utils.sendReponse(res, 500, 'Failed to add ' + (addedUrls.length == 1? addedUrls[0]: addedUrls.length + " seeds") + " to the seed list");
-					}
-					if (req) addedUrls.unshift(req.headers["user-agent"]);
-					utils.logline('addedSeeds.log',addedUrls);
-				});
-			}
+				if (success) {
+					utils.sendReponse(res, 202, 'Successfully added ' + (addedUrls.length == 1? addedUrls[0]: addedUrls.length + " seeds") + ' to the seed list');
+				} else {
+					utils.sendReponse(res, 500, 'Failed to add ' + (addedUrls.length == 1? addedUrls[0]: addedUrls.length + " seeds") + " to the seed list");
+				}
+				if (req) addedUrls.unshift(req.headers["user-agent"]);
+				utils.logline('addedSeeds.log',addedUrls);
+			});
 		}
 	});
+	
+	
+//	request.post({url: config.seedlistUpdater.sparqlEndpoint, headers: { "Accept": "application/json"}, form: {query: query}}, function(error, response, body) {
+//		
+//	});
 };
 
 
