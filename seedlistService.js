@@ -45,20 +45,16 @@ var makeSeedsUnique = function(seeds) {
 		var url = seeds[i].url;
 		if (!checkedUrls[url]) {
 			checkedUrls[url] = true;
-			uniqueSeeds = seeds[i];
+			uniqueSeeds.push(seeds[i]);
 		}
 	}
 	return uniqueSeeds;
 };
 
 var checkSeedAlreadyAdded = function(seedUrl, callback) {
-	var query = "PREFIX llo: <http://lodlaundromat.org/ontology/> \n SELECT * WHERE {\n";
-	for (var i = 0; i < seeds.length; i++ ){
-		query += "ASK {[] llo:url  <" + seeds[i].url + "> } .\n";
-	}
+	var query = "PREFIX llo: <http://lodlaundromat.org/ontology/> \n ";
+	query += "ASK {[] llo:url  <" + seedUrl + "> }";
 	request.post({url: config.seedlistUpdater.sparqlEndpoint, headers: { "Accept": "text/plain"}, form: {query: query}}, function(error, response, body) {
-		console.log(body);
-		process.exit(1);
 		if (response.statusCode != 200) {
 			callback(null);
 		} else {
@@ -66,12 +62,12 @@ var checkSeedAlreadyAdded = function(seedUrl, callback) {
 		}
 	});
 };
-var checkSeedsAlreadyAdded = function(seeds, i, finalCallback) {
-	var seedsToAdd = [];
+var checkSeedsAlreadyAdded = function(seeds, i, finalCallback, seedsToAdd) {
+	if (seedsToAdd == undefined) seedsToAdd = [];
 	if (seeds[i]) {
 		checkSeedAlreadyAdded(seeds[i].url, function(alreadyAdded) {
-			if (alreadyAdded != null && alreadyAdded == true) seedsToAdd.push(seeds[i]);
-			checkSeedsAlreadyAdded(seeds, i+1, finalCallback);
+			if (alreadyAdded != null && alreadyAdded == false) seedsToAdd.push(seeds[i]);
+			checkSeedsAlreadyAdded(seeds, i+1, finalCallback, seedsToAdd);
 			
 		});
 	} else {
@@ -84,24 +80,25 @@ var addSeeds = function(req, res, type, seeds) {
 	
 	seeds = makeSeedsUnique(seeds);
 	checkSeedsAlreadyAdded(seeds, 0, function(seedsToAdd){
-		if (seeds.length == 1 && seedNum == 0) {
+		var urlsToAdd = [];
+                for (var i = 0; i < seedsToAdd.length; i++) {
+			urlsToAdd.push(seedsToAdd[i].url);
+ 		}
+
+		if (seeds.length == 1 && seedsToAdd.length == 0) {
 			//just 1 url, probably a user who'd like some feedback
 			utils.sendReponse(res,400, 'This seed is already in our list: ' + seeds[0].url);
 			return;
 		} 
 		if (seeds.length > 0) {
 			seedlistUpdater(type, seedsToAdd, function(success, body) {
-				var addedUrls = [];
-				for (var url in seedsToAdd) {
-					addedUrls.push(url);
-				}
 				if (success) {
-					utils.sendReponse(res, 202, 'Successfully added ' + (addedUrls.length == 1? addedUrls[0]: addedUrls.length + " seeds") + ' to the seed list');
+					utils.sendReponse(res, 202, 'Successfully added ' + (urlsToAdd.length == 1? urlsToAdd[0]: urlsToAdd.length + " seeds") + ' to the seed list');
 				} else {
-					utils.sendReponse(res, 500, 'Failed to add ' + (addedUrls.length == 1? addedUrls[0]: addedUrls.length + " seeds") + " to the seed list");
+					utils.sendReponse(res, 500, 'Failed to add ' + (urlsToAdd.length == 1? urlsToAdd[0]: urlsToAdd.length + " seeds") + " to the seed list");
 				}
-				if (req) addedUrls.unshift(req.headers["user-agent"]);
-				utils.logline('addedSeeds.log',addedUrls);
+				if (req) urlsToAdd.unshift(req.headers["user-agent"]);
+				utils.logline('addedSeeds.log',urlsToAdd);
 			});
 		}
 	});
@@ -146,7 +143,7 @@ http.createServer(function (req, res) {
 				addLazySeed(res, args);
 				return;
 			} else {
-				addSeeds(req, res, [{url: args["url"], from: args["from"]}], param);
+				addSeeds(req, res, args.type, [{url: args["url"], from: args["from"]}]);
 				
 			}
 		} else {

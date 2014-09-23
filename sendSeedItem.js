@@ -9,7 +9,8 @@ var 	config = require('./config.json'),
 module.exports = function(type, seeds, callback) {
     var getTurtle = function() {
     	var turtle = "@prefix llo: <http://lodlaundromat.org/ontology/> .\n";
-    	for (var url in seeds) {
+    	for (var i = 0; i < seeds.length; i++) {
+		var url = seeds[i].url;
     		turtle += "<http://lodlaundromat.org/resource/" + md5(url) +"> llo:md5 \"" + md5(url) + "\"^^xsd:string ;\n";
     		turtle += "llo:url <" + url + "> ;\n";
     		turtle += "llo:added \"" + xsdDateTime() + "\"^^xsd:dateTime .\n";
