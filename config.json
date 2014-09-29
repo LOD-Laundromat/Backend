@@ -16,10 +16,10 @@
 		"maxSeedlistTime": 3600,
 		"checkLazyListInterval": 60
 	},
-        "datadumps": {
-	        "dumpLocation": "/scratch/lodlaundromat/dumps/",
-	        "graphs": {
-		       "http://lodlaundromat.org#metrics-": "metrics",
-		 }
+    "datadumps": {
+        "dumpLocation": "/scratch/lodlaundromat/dumps/",
+        "graphs": {
+        	"http://lodlaundromat.org#metrics-": "metrics"
+		}
 	}
 }
