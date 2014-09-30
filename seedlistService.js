@@ -6,7 +6,7 @@ var util = require('util'),
 	queryString = require('querystring'),
 	utils = require('./utils.js'),
 	seedlistUpdater = require('./sendSeedItem.js'),
-	config = require('./config.json');
+	config = require('./config.js');
 
 /**
  * Run seed list updater server
@@ -14,7 +14,7 @@ var util = require('util'),
 if (!config.seedlistUpdater.graphApi) throw new Error('No graph API URL defined to send new seed list items to');
 if (!config.seedlistUpdater.washingMachineGraph) throw new Error('No washing machine graph defined to store new seed list items in');
 if (!config.seedlistUpdater.seedlistGraph) throw new Error('No seedlistGraph defined to store new seed list items in');
-if (!config.seedlistUpdater.llVersion) throw new Error('No ll version defined');
+if (!config.llVersion) throw new Error('No ll version defined');
 if (!config.seedlistUpdater.port) throw new Error('No port defined to run seed list API on');
 
 

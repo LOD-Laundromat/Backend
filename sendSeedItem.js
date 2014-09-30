@@ -1,4 +1,4 @@
-var 	config = require('./config.json'),
+var 	config = require('./config.js'),
 	http = require('http'),
 	request = require('request'),
 	md5 = require('MD5'),
@@ -17,7 +17,7 @@ module.exports = function(type, seeds, callback) {
     	}
     	return turtle;
     };
-    var addToGraph = (type == "url"? config.seedlistUpdater.seedlistGraph: config.seedlistUpdater.washingMachineGraph + config.seedlistUpdater.llVersion);
+    var addToGraph = (type == "url"? config.seedlistUpdater.seedlistGraph: config.seedlistUpdater.washingMachineGraph + config.llVersion);
     var options = {
 	url: config.seedlistUpdater.graphApi + '?' + queryString.stringify({"graph-uri": addToGraph}),
 	headers: {

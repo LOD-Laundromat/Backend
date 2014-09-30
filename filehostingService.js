@@ -4,13 +4,13 @@ var util = require('util'),
 	url = require('url'),
 	path = require('path'),
 	utils = require('./utils.js'),
-	config = require('./config.json');
+	config = require('./config.js');
 
 
 if (!config.fileHosting.dataDir) throw new Error('No data directory defined');
 if (!fs.existsSync(config.fileHosting.dataDir)) throw new Error('Data directory not found: ' + config.dataDir);
 if (!config.fileHosting.port) throw new Error('No port defined to run  file hosting server on');
-if (!config.fileHosting.llVersion) throw new Error('No version defined to serve files for');
+if (!config.llVersion) throw new Error('No version defined to serve files for');
 
 if (!config.loggingDir) throw new Error("No logging dir specified");
 if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exist");
@@ -38,7 +38,7 @@ http.createServer(function (req, res) {
 	if (hash.length == 0) {
 		utils.sendReponse(res,406, 'No dataset defined in download request. To download a file, use the SPARQL endpoint or web interface to get the hash ID, and download the file using http://download.lodlaundromat.org/<md5>');
 	} else {
-		var datasetDir = config.fileHosting.dataDir + '/' + config.fileHosting.llVersion + '/' + hash;
+		var datasetDir = config.fileHosting.dataDir + '/' + config.llVersion + '/' + hash;
 		fs.exists(datasetDir, function(datasetDirExists) {
 			if (!datasetDirExists) {
 				utils.sendReponse(res,404, 'Dataset not found');

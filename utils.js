@@ -1,4 +1,4 @@
-var config = require('./config.json'),
+var config = require('./config.js'),
 	fs = require('fs');
 module.exports = {
 		sendReponse: function(response, statusCode, reasonPhrase) {
