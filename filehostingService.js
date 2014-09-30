@@ -15,11 +15,17 @@ if (!config.llVersion) throw new Error('No version defined to serve files for');
 if (!config.loggingDir) throw new Error("No logging dir specified");
 if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exist");
 
+
+fs.stat("config.js", function(err, stat){
+    
+//   console.log(stat.mtime.getFullYear() + "-" + (stat.mtime.getMonth()+1) + "-" + stat.mtime.getDate() + "_"); 
+});
+
 /**
  * Run file hosting server
  */
 http.createServer(function (req, res) { 
-	var sendFile = function(file) {
+	var sendDatasetFile = function(file) {
 		var contentType = "application/x-gzip";
 		var stream = fs.createReadStream(file);
 	    stream.on('error', function(error) {
@@ -33,38 +39,80 @@ http.createServer(function (req, res) {
 	    stream.pipe(res);
 	    utils.logline('downloads.log',  [req.headers["user-agent"],hash]);
 	};
+	var sendDumpFile = function(file, filename) {
+	    var contentType = "application/x-gzip";
+        var stream = fs.createReadStream(file);
+        stream.on('error', function(error) {
+            utils.sendReponse(res, 500, 'Unable to send gzip file');
+            
+        });
+        res.setHeader('Content-disposition', 'attachment; filename=' + filename);
+        res.setHeader('Content-Type', contentType);
+        res.writeHead(200);
+        stream.pipe(res);
+        utils.logline('downloads.log',  [req.headers["user-agent"],hash]);
+	};
+	var getDumpFile = function(path, callback) {
+	    
+	    if (path.indexOf(config.datadumps.extension, path.length - config.datadumps.extension.length) == 0) {
+	        var base = path.substring(0, path.length - config.datadumps.extension.length);
+	        if (base in datadumps.graphs) {
+	            var fileLocation = config.datadumps.dumpLocation + "/" + path;
+	            fs.stat(fileLocation, function(err, stat){
+	                if (err) {
+	                    callback(false);//file probably does not exist
+	                } else {
+	                    var downloadFilename = stat.mtime.getFullYear() + "-" + (stat.mtime.getMonth()+1) + "-" + stat.mtime.getDate() + "_" + path;
+	                    callback(fileLocation, downloadFilename);
+	                }
+	            });
+	            
+	            
+	        } else {
+	            callback(false);
+	        }
+	    } else {
+	        callback(false);
+	    }
+	};
 	
-	var hash = path.basename(url.parse(req.url, true).path);
-	if (hash.length == 0) {
+	var pathname = path.basename(url.parse(req.url, true).pathname);
+	if (pathname.length == 0) {
 		utils.sendReponse(res,406, 'No dataset defined in download request. To download a file, use the SPARQL endpoint or web interface to get the hash ID, and download the file using http://download.lodlaundromat.org/<md5>');
 	} else {
-		var datasetDir = config.fileHosting.dataDir + '/' + config.llVersion + '/' + hash;
-		fs.exists(datasetDir, function(datasetDirExists) {
-			if (!datasetDirExists) {
-				utils.sendReponse(res,404, 'Dataset not found');
-			}
-			//ok, dataset directory exists. Does it have a clean file though...
-			var ntFile = datasetDir + '/clean.nt.gz';
-			fs.exists(ntFile, function(ntFileExists) {
-				if (!ntFileExists) {
-					//ah, no nt file! Check for an nq file..
-					var nqFile = datasetDir + '/clean.nq.gz';
-					fs.exists(nqFile, function(nqFileExists) {
-						if (!nqFileExists) {
-							//no nq file AND no nt file..
-							utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
-						} else {
-							sendFile(nqFile);
-							
-						}
-					});
-				} else {
-					sendFile(ntFile);
-				}
-				
-			});
-			
-		});
+	    var dumpFile = getDumpFile(pathname, function(fileLocation, downloadName) {
+	        if (fileLocation) {
+	            sendDumpFile();
+	        } else {
+	            var datasetDir = config.fileHosting.dataDir + '/' + config.llVersion + '/' + pathname;
+	            fs.exists(datasetDir, function(datasetDirExists) {
+	                if (!datasetDirExists) {
+	                    utils.sendReponse(res,404, 'Dataset not found');
+	                }
+	                //ok, dataset directory exists. Does it have a clean file though...
+	                var ntFile = datasetDir + '/clean.nt.gz';
+	                fs.exists(ntFile, function(ntFileExists) {
+	                    if (!ntFileExists) {
+	                        //ah, no nt file! Check for an nq file..
+	                        var nqFile = datasetDir + '/clean.nq.gz';
+	                        fs.exists(nqFile, function(nqFileExists) {
+	                            if (!nqFileExists) {
+	                                //no nq file AND no nt file..
+	                                utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
+	                            } else {
+	                                sendDatasetFile(nqFile);
+	                                
+	                            }
+	                        });
+	                    } else {
+	                        sendFile(ntFile);
+	                    }
+	                    
+	                });
+	                
+	            });
+	        }
+	    });
 	}
 }).listen(config.fileHosting.port);
 util.puts('> File hosting backend running on ' + config.fileHosting.port);

@@ -16,6 +16,7 @@ module.exports = {
         checkLazyListInterval : 60
     },
     datadumps : {
+        extension: ".ttl.gz",
         dumpLocation : "/scratch/lodlaundromat/dumps/",
         graphs : {
             metrics : function() { return "http://lodlaundromat.org#metrics-" + module.exports.llVersion;},
