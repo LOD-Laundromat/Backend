@@ -18,7 +18,8 @@ module.exports = {
     datadumps : {
         dumpLocation : "/scratch/lodlaundromat/dumps/",
         graphs : {
-            metrics : function() { return "http://lodlaundromat.org#metrics-" + module.exports.llVersion;}
+            metrics : function() { return "http://lodlaundromat.org#metrics-" + module.exports.llVersion;},
+            main : function() { return "http://lodlaundromat.org#" + module.exports.llVersion;},
         }
     }
 };
