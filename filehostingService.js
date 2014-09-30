@@ -30,11 +30,11 @@ http.createServer(function (req, res) {
 	    	
 	    });
 	    //I know last 6 chars are extension (either nt.gz or nq.gz). Just use this knowledge (won't change)
-	    res.setHeader('Content-disposition', 'attachment; filename=' + hash + file.slice(-6));
+	    res.setHeader('Content-disposition', 'attachment; filename=' + pathname + file.slice(-6));
 	    res.setHeader('Content-Type', contentType);
 	    res.writeHead(200);
 	    stream.pipe(res);
-	    utils.logline('downloads.log',  [req.headers["user-agent"],hash]);
+	    utils.logline('downloads.log',  [req.headers["user-agent"],pathname]);
 	};
 	var sendDumpFile = function(file, filename) {
 	    var contentType = "application/x-gzip";
@@ -101,7 +101,7 @@ http.createServer(function (req, res) {
 	                            }
 	                        });
 	                    } else {
-	                        sendFile(ntFile);
+	                        sendDatasetFile(ntFile);
 	                    }
 	                    
 	                });
