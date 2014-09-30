@@ -16,10 +16,7 @@ if (!config.loggingDir) throw new Error("No logging dir specified");
 if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exist");
 
 
-fs.stat("config.js", function(err, stat){
-    
-//   console.log(stat.mtime.getFullYear() + "-" + (stat.mtime.getMonth()+1) + "-" + stat.mtime.getDate() + "_"); 
-});
+
 
 /**
  * Run file hosting server
@@ -50,13 +47,12 @@ http.createServer(function (req, res) {
         res.setHeader('Content-Type', contentType);
         res.writeHead(200);
         stream.pipe(res);
-        utils.logline('downloads.log',  [req.headers["user-agent"],hash]);
+        utils.logline('downloads.log',  [req.headers["user-agent"],[filename]);
 	};
 	var getDumpFile = function(path, callback) {
-	    
-	    if (path.indexOf(config.datadumps.extension, path.length - config.datadumps.extension.length) == 0) {
+	    if (path.indexOf(config.datadumps.extension, path.length - config.datadumps.extension.length) != -1) {
 	        var base = path.substring(0, path.length - config.datadumps.extension.length);
-	        if (base in datadumps.graphs) {
+	        if (base in config.datadumps.graphs) {
 	            var fileLocation = config.datadumps.dumpLocation + "/" + path;
 	            fs.stat(fileLocation, function(err, stat){
 	                if (err) {
@@ -82,7 +78,7 @@ http.createServer(function (req, res) {
 	} else {
 	    var dumpFile = getDumpFile(pathname, function(fileLocation, downloadName) {
 	        if (fileLocation) {
-	            sendDumpFile();
+	            sendDumpFile(fileLocation, downloadName);
 	        } else {
 	            var datasetDir = config.fileHosting.dataDir + '/' + config.llVersion + '/' + pathname;
 	            fs.exists(datasetDir, function(datasetDirExists) {

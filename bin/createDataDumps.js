@@ -33,7 +33,7 @@ var createDataDump = function(graphsToDo) {
 	    if (typeof graphUri == "function") graphUri = graphUri();
 		console.log("> creating dump for graph " + graphUri);
 		var targetPath = config.datadumps.dumpLocation + "/" + graphName;
-		var singleDumpFile = config.datadumps.dumpLocation + "/" + graphName + ".gz";
+		var singleDumpFile = config.datadumps.dumpLocation + "/" + graphName + config.datadumps.extension;
 		shell.mkdir(targetPath);
 		console.log('isql exec="dump_ntriples(\'' + graphUri + '\', \'' + targetPath + '\')"');
 		shell.exec('isql exec="dump_ntriples(\'' + graphUri + '\', \'' + targetPath + '\')"', function(exitCode, output) {
