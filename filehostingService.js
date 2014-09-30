@@ -47,7 +47,7 @@ http.createServer(function (req, res) {
         res.setHeader('Content-Type', contentType);
         res.writeHead(200);
         stream.pipe(res);
-        utils.logline('downloads.log',  [req.headers["user-agent"],[filename]);
+        utils.logline('downloads.log',  [req.headers["user-agent"],filename]);
 	};
 	var getDumpFile = function(path, callback) {
 	    if (path.indexOf(config.datadumps.extension, path.length - config.datadumps.extension.length) != -1) {
