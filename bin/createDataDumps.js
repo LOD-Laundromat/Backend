@@ -9,9 +9,14 @@ var fs = require('fs'),
 
 if (!fs.existsSync(config.datadumps.dumpLocation)) throw new Error("Dump location does not exist: " + config.datadumps.dumpLocation);
 
-
 console.log("cleaning old dumps");
-shell.rm('-r', config.datadumps.dumpLocation + '/*');
+var dumpLocation = config.datadumps.dumpLocation;
+if (dumpLocation && dumpLocation.length > 5) {
+	shell.rm('-rf', config.datadumps.dumpLocation + '/*');
+} else {
+	console.log("strange dump location. Sure we're not deleting root? ;)");
+	process.exit(1);
+}
 
 
 var graphs = config.datadumps.graphs
