@@ -22,7 +22,11 @@ module.exports = {
         graphs : {
             metrics : function() { return "http://lodlaundromat.org#metrics-" + module.exports.llVersion;},
             main : function() { return "http://lodlaundromat.org#" + module.exports.llVersion;},
-	    seedlist: "http://lodlaundromat.org#seedlist"
+	    seedlist: "http://lodlaundromat.org#seedlist",
+	    errorOntology: "http://lodlaundromat.org/ontology#error",
+	    httpOntology: "http//lodlaundromat.org/ontology#http",
+	    llOntology: "http://lodlaundromat.org/ontology#llo",
+	    metricsOntology: "http://lodlaundromat.org/ontology#llm"
         }
     }
 };
