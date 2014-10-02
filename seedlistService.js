@@ -56,18 +56,20 @@ var checkSeedAlreadyAdded = function(seedUrl, callback) {
 	query += "ASK {[] llo:url  <" + seedUrl + "> }";
 	request.post({url: config.seedlistUpdater.sparqlEndpoint, headers: { "Accept": "text/plain"}, form: {query: query}}, function(error, response, body) {
 		if (response.statusCode != 200) {
-			callback(null);
+			console.log("could not check whether " + seedUrl + " was already in seed list... Assuming it is not");
+			callback(false);
 		} else {
 			callback(body.toLowerCase() == "true");
 		}
 	});
 };
-var checkSeedsAlreadyAdded = function(seeds, i, finalCallback, seedsToAdd) {
+var checkSeedsAlreadyAdded = function(seeds, finalCallback, i, seedsToAdd) {
+	if (i == undefined) i = 0;
 	if (seedsToAdd == undefined) seedsToAdd = [];
 	if (seeds[i]) {
 		checkSeedAlreadyAdded(seeds[i].url, function(alreadyAdded) {
 			if (alreadyAdded != null && alreadyAdded == false) seedsToAdd.push(seeds[i]);
-			checkSeedsAlreadyAdded(seeds, i+1, finalCallback, seedsToAdd);
+			checkSeedsAlreadyAdded(seeds, finalCallback, i+1, seedsToAdd);
 			
 		});
 	} else {
@@ -79,27 +81,25 @@ var checkSeedsAlreadyAdded = function(seeds, i, finalCallback, seedsToAdd) {
 var addSeeds = function(req, res, type, seeds) {
 	
 	seeds = makeSeedsUnique(seeds);
-	checkSeedsAlreadyAdded(seeds, 0, function(seedsToAdd){
-		var urlsToAdd = [];
-                for (var i = 0; i < seedsToAdd.length; i++) {
-			urlsToAdd.push(seedsToAdd[i].url);
- 		}
+	checkSeedsAlreadyAdded(seeds, function(seedsToAdd){
 
 		if (seeds.length == 1 && seedsToAdd.length == 0) {
 			//just 1 url, probably a user who'd like some feedback
 			utils.sendReponse(res,400, 'This seed is already in our list: ' + seeds[0].url);
 			return;
 		} 
-		if (seeds.length > 0) {
+		if (seedsToAdd.length > 0) {
 			seedlistUpdater(type, seedsToAdd, function(success, body) {
 				if (success) {
-					utils.sendReponse(res, 202, 'Successfully added ' + (urlsToAdd.length == 1? urlsToAdd[0]: urlsToAdd.length + " seeds") + ' to the seed list');
+					utils.sendReponse(res, 202, 'Successfully added ' + (seedsToAdd.length == 1? seedsToAdd[0].url: seedsToAdd.length + " seeds") + ' to the seed list');
 				} else {
-					utils.sendReponse(res, 500, 'Failed to add ' + (urlsToAdd.length == 1? urlsToAdd[0]: urlsToAdd.length + " seeds") + " to the seed list");
+					utils.sendReponse(res, 500, 'Failed to add ' + (seedsToAdd.length == 1? seedsToAdd[0].url: seedsToAdd.length + " seeds") + " to the seed list");
 				}
-				if (req) urlsToAdd.unshift(req.headers["user-agent"]);
-				utils.logline('addedSeeds.log',urlsToAdd);
+		//		if (req) urlsToAdd.unshift(req.headers["user-agent"]);
+		//		utils.logline('addedSeeds.log',urlsToAdd);
 			});
+		} else {
+			console.log("tried to add " + seeds.length + ", but added none. Is something wrong here?");
 		}
 	});
 	
