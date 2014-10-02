@@ -52,7 +52,7 @@ http.createServer(function (req, res) {
 	var getDumpFile = function(path, callback) {
 	    if (path.indexOf(config.datadumps.extension, path.length - config.datadumps.extension.length) != -1) {
 	        var base = path.substring(0, path.length - config.datadumps.extension.length);
-	        if (base in config.datadumps.graphs) {
+	        if (base == config.datadumps.totalFile || base in config.datadumps.graphs) {
 	            var fileLocation = config.datadumps.dumpLocation + "/" + path;
 	            fs.stat(fileLocation, function(err, stat){
 	                if (err) {

@@ -16,7 +16,7 @@ module.exports = {
         checkLazyListInterval : 60
     },
     datadumps : {
-	totalFile: 'all',
+	totalFile: 'dump',
         extension: ".nt.gz",
         dumpLocation : "/scratch/lodlaundromat/dumps/",
         graphs : {
