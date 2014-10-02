@@ -27,7 +27,15 @@ var createDataDump = function(graphsToDo) {
 	var graphName = null;
 	for (graphName in graphsToDo) break;
 	if (graphName == null) {
-		console.log("> no graphs left to create data dump for");
+		console.log("> no graphs left to create data dump for. Now concatenating all the gzipped dumps");
+	    var totalFile = config.datadumps.dumpLocation + '/' + config.datadumps.totalFile + config.datadumps.extension;
+	    shell.exec('cat ' + dumpLocation + '/*' + config.datadumps.extension + ' >> ' + totalFile, function(exitCode, output) {
+		if (exitCode) {
+		    console.log('failed to create total gzipped file');
+		} else {
+		    console.log('created total gzipped file at ' + totalFile);
+		}
+	    });
 	} else {
 		var graphUri = graphsToDo[graphName];
 	    if (typeof graphUri == "function") graphUri = graphUri();
@@ -48,3 +56,4 @@ var createDataDump = function(graphsToDo) {
 };
 
 createDataDump(graphs);
+
