@@ -16,11 +16,12 @@ module.exports = {
         checkLazyListInterval : 60
     },
     datadumps : {
-        extension: ".ttl.gz",
+        extension: ".nt.gz",
         dumpLocation : "/scratch/lodlaundromat/dumps/",
         graphs : {
             metrics : function() { return "http://lodlaundromat.org#metrics-" + module.exports.llVersion;},
             main : function() { return "http://lodlaundromat.org#" + module.exports.llVersion;},
+	    seedlist: "http://lodlaundromat.org#seedlist"
         }
     }
 };
