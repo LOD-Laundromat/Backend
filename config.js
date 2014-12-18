@@ -12,7 +12,7 @@ module.exports = {
         washingMachineGraph : "http://lodlaundromat.org#",
         sparqlEndpoint : "http://sparql.backend.lodlaundromat.org",
         maxSeedlistSize : 50,
-        maxSeedlistTime : 10,
+        maxSeedlistTime : 3600,
         checkLazyListInterval : 60,
         supportedSchemes: {
             'http': true,
