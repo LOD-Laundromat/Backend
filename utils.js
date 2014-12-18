@@ -14,7 +14,7 @@ module.exports = {
 			}
 		},
 		logline: function(filename, messages) {
-			fs.appendFile(config.loggingDir + '/' + filename, new Date().toString() + ' - ' + messages.join(' - ') + '\n');
+			fs.appendFile(config.loggingDir + '/' + filename, new Date().toString() + ' - ' + messages.join(' - ') + '\n', function(){});
 		},
 		/**
 		 * warning: does not extens sub objects!

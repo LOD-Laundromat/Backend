@@ -123,33 +123,35 @@ http.createServer(function (req, res) {
 	}
 	
 	var args = utils.extend({}, defaults, (url.parse(req.url, true).query));
-	
 	if (args.type != "url" && args.type != "archive") {
 		utils.sendReponse(res,400, 'Unrecognized \'type\' argument: ' + args.type + '. Supported: [url|archive]');
 		return;
 	}
-
+	var parsedUri = null;
 	if (args.url) {
-		args.url = new iri.IRI(args.url).toURIString();
+	    parsedUri = new iri.IRI(args.url);
+		args.url = parsedUri.toURIString().trim();
 		args.url = args.url.trim();
 	}
 	if (!args.url || args.url.length == 0) {
 		utils.sendReponse(res, 400, 'No seed item given as argument');
 		utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
 	} else {
-		//validate seed
-		if (args.url.indexOf('http') == 0) {
-			if (args.lazy) {
-				addLazySeed(res, args);
-				return;
-			} else {
-				addSeeds(req, res, args.type, [{url: args["url"], from: args["from"]}]);
-				
-			}
-		} else {
-			utils.sendReponse(res,400, 'The seed item is not a URI: ' + args.url);
-			utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
-		}
+	    if (!parsedUri) {
+	        utils.sendReponse(res,400, 'The seed item is not a valid URI: ' + args.url);
+            utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
+	    } else if (!(parsedUri.scheme() in config.seedlistUpdater.supportedSchemes)) {
+	        utils.sendReponse(res,400, 'URIs with scheme "' + parsedUri.scheme() + '" are not yet supported. You can enter a feature request on Github');
+            utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
+	    } else {
+	         if (args.lazy) {
+                  addLazySeed(res, args);
+                  return;
+              } else {
+                  addSeeds(req, res, args.type, [{url: args["url"], from: args["from"]}]);
+                  
+              }
+	    }
 	}
 	
 }).listen(config.seedlistUpdater.port);
