@@ -71,8 +71,14 @@ http.createServer(function (req, res) {
 	        callback(false);
 	    }
 	};
-	
-	var pathname = path.basename(url.parse(req.url, true).pathname);
+	var parsedUrl = url.parse(req.url, true);
+	var pathname = path.basename(parsedUrl.pathname);
+    var extension = ".nt.gz";
+    if (parsedUrl.query && parsedUrl.query.type) {
+	if (parsedUrl.query.type == "hdt") {
+	    extension = ".hdt";
+	}
+    }
 	if (pathname.length == 0) {
 		utils.sendReponse(res,406, 'No dataset defined in download request. To download a file, use the SPARQL endpoint or web interface to get the hash ID, and download the file using http://download.lodlaundromat.org/<md5>');
 	} else {
@@ -86,22 +92,25 @@ http.createServer(function (req, res) {
 	                    utils.sendReponse(res,404, 'Dataset not found');
 	                }
 	                //ok, dataset directory exists. Does it have a clean file though...
-	                var ntFile = datasetDir + '/clean.nt.gz';
-	                fs.exists(ntFile, function(ntFileExists) {
-	                    if (!ntFileExists) {
-	                        //ah, no nt file! Check for an nq file..
-	                        var nqFile = datasetDir + '/clean.nq.gz';
-	                        fs.exists(nqFile, function(nqFileExists) {
-	                            if (!nqFileExists) {
-	                                //no nq file AND no nt file..
-	                                utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
-	                            } else {
-	                                sendDatasetFile(nqFile);
-	                                
-	                            }
-	                        });
+	                var cleanFile = datasetDir + '/clean' + extension;
+	                fs.exists(cleanFile, function(cleanFileExists) {
+	                    if (!cleanFileExists) {
+				    if (extension == ".nt.gz") {
+					//ah, no nt file! Check for an nq file..
+					var nqFile = datasetDir + '/clean.nq.gz';
+					fs.exists(nqFile, function(nqFileExists) {
+					    if (!nqFileExists) {
+						//no nq file AND no nt file..
+						utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
+					    } else {
+						sendDatasetFile(nqFile);
+					    }
+					});
+				    } else {
+					utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
+				    }
 	                    } else {
-	                        sendDatasetFile(ntFile);
+	                        sendDatasetFile(cleanFile);
 	                    }
 	                    
 	                });
