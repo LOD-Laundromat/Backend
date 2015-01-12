@@ -19,7 +19,8 @@
   "dependencies": {
     "request": "^2.40.0",
     "MD5": "^1.2.1",
-    "shelljs": "^0.3.0"
+    "shelljs": "^0.3.0",
+    "jsdom": "^2.0.0"
   },
   "devDependencies": {
     "napa": "^0.4.1"

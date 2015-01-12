@@ -15,7 +15,7 @@ var fs = require('fs'),
 /**
  * Check and validate file
  */
-var filename = 'url.data';
+var filename = null;
 if (process.argv.length > 2) {
 	filename = process.argv[2];
 }
