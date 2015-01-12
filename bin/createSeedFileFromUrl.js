@@ -43,12 +43,13 @@ var checkUrl = function(url) {
 			$('a').each(function() {
 				var el = $(this);
 				if (el.text() == 'Parent Directory') return;
-				if (el.attr('href').endsWith('.rdf')) {
-					seeds.push(url + '/' + el.attr('href'));
+				var href = el.attr('href');
+				if (href.endsWith('.rdf')) {
+					seeds.push(url + (url.endsWith('/') ? '': '/') + href);
 					
-				} else if (el.attr('href').endsWith('/') && el.attr('href').length > 1) {
+				} else if (href.endsWith('/') && href.length > 1) {
 					//a folder. follow it
-					urlsToCheck.push(url + '/' + el.attr('href'));
+					urlsToCheck.push(url + (url.endsWith('/') ? '': '/') + href);
 				}
 			});
 			checkUrls();
