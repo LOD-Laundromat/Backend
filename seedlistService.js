@@ -32,10 +32,29 @@ var latestLazyAdded = {
 	url: null,
 	archive: null
 };
-var addLazySeed = function(res,args) {
-	lazySeeds[args.type].push({url: args.url, from: args.from});
+
+/**
+ * Returns string representation of parsed URI.
+ * Cannot use the toURIString method, because this does not deal with casing issues (for e.g. the scheme)
+ */
+var parsedUriToString = function(parsedUri) {
+  var toUriString = function(part) {
+    return part.replace(/([\uA0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFEF]|[\uD800-\uDBFF][\uDC00-\uDFFF])/g, function(a){return encodeURI(a);});
+  }
+   return '' +
+      toUriString(parsedUri.scheme().toLowerCase()) + 
+      '://' +
+      (parsedUri.scheme()?toUriString(parsedUri.authority()):'') +
+      (parsedUri.path()?toUriString(parsedUri.path()): '') +
+      (parsedUri.query()?toUriString(parsedUri.query()):'') +
+      (parsedUri.fragment()?toUriString(parsedUri.fragment()): '');
+};
+
+var addLazySeed = function(res,args, parsedUri) {
+  var url = parsedUriToString(parsedUri);
+	lazySeeds[args.type].push({url: url, from: args.from});
 	latestLazyAdded[args.type] = new Date();
-	utils.sendReponse(res,202, 'Added lazy arg ' + args.url + ' to be added to seed list later');
+	utils.sendReponse(res,202, 'Added lazy arg ' + url + ' to be added to seed list later');
 };
 
 var makeSeedsUnique = function(seeds) {
@@ -79,7 +98,6 @@ var checkSeedsAlreadyAdded = function(seeds, finalCallback, i, seedsToAdd) {
 };
 
 var addSeeds = function(req, res, type, seeds) {
-	
 	seeds = makeSeedsUnique(seeds);
 	checkSeedsAlreadyAdded(seeds, function(seedsToAdd){
 
@@ -137,18 +155,18 @@ http.createServer(function (req, res) {
 		utils.sendReponse(res, 400, 'No seed item given as argument');
 		utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
 	} else {
-	    if (!parsedUri) {
+	    if (!parsedUri.scheme()) {
 	        utils.sendReponse(res,400, 'The seed item is not a valid URI: ' + args.url);
             utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
-	    } else if (!(parsedUri.scheme() in config.seedlistUpdater.supportedSchemes)) {
+	    } else if (!(parsedUri.scheme().toLowerCase() in config.seedlistUpdater.supportedSchemes)) {
 	        utils.sendReponse(res,400, 'URIs with scheme "' + parsedUri.scheme() + '" are not yet supported. You can enter a feature request on Github');
             utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
 	    } else {
 	         if (args.lazy) {
-                  addLazySeed(res, args);
+                  addLazySeed(res, args, parsedUri);
                   return;
               } else {
-                  addSeeds(req, res, args.type, [{url: args["url"], from: args["from"]}]);
+                  addSeeds(req, res, args.type, [{url: parsedUriToString(parsedUri), from: args["from"]}]);
                   
               }
 	    }
