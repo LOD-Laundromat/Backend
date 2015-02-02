@@ -44,7 +44,7 @@ var parsedUriToString = function(parsedUri) {
    return '' +
       toUriString(parsedUri.scheme().toLowerCase()) + 
       '://' +
-      (parsedUri.scheme()?toUriString(parsedUri.authority()):'') +
+      (parsedUri.authority()?toUriString(parsedUri.authority()):'') +
       (parsedUri.path()?toUriString(parsedUri.path()): '') +
       (parsedUri.query()?toUriString(parsedUri.query()):'') +
       (parsedUri.fragment()?toUriString(parsedUri.fragment()): '');
@@ -148,17 +148,33 @@ http.createServer(function (req, res) {
 	var parsedUri = null;
 	if (args.url) {
 	    parsedUri = new iri.IRI(args.url);
-		args.url = parsedUri.toURIString().trim();
+      if (!parsedUri.scheme()) {
+          //no scheme? try with http before
+          var testParse = new iri.IRI('http://' + args.url);
+          if (testParse.authority() && testParse.scheme()) {
+            var reasonphrase = JSON.stringify({success: false, alternative: 'http://' + args.url, reason: 'Did you mean http://' + args.url + '?'});
+            res.writeHead(400, {
+              'Content-Length': reasonphrase.length,
+              'Content-Type': 'application/json' 
+            });
+            res.write(reasonphrase);
+            res.end();
+            utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
+            return;
+          } else {
+            utils.sendReponse(res,400, 'The seed item is not a valid URI: ' + args.url);
+            utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
+            return;
+          }
+	        
+	    }
 		args.url = args.url.trim();
 	}
 	if (!args.url || args.url.length == 0) {
 		utils.sendReponse(res, 400, 'No seed item given as argument');
 		utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
 	} else {
-	    if (!parsedUri.scheme()) {
-	        utils.sendReponse(res,400, 'The seed item is not a valid URI: ' + args.url);
-            utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
-	    } else if (!(parsedUri.scheme().toLowerCase() in config.seedlistUpdater.supportedSchemes)) {
+	    if (!(parsedUri.scheme().toLowerCase() in config.seedlistUpdater.supportedSchemes)) {
 	        utils.sendReponse(res,400, 'URIs with scheme "' + parsedUri.scheme() + '" are not yet supported. You can enter a feature request on Github');
             utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
 	    } else {
