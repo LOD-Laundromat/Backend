@@ -7,7 +7,7 @@ module.exports = {
     },
     seedlistUpdater : {
         port : 8989,
-        graphApi : "http://localhost/sparql/graph",
+        graphApi : "http://127.0.0.1:8890/sparql-graph-crud",
         seedlistGraph : "http://lodlaundromat.org#seedlist",
         washingMachineGraph : "http://lodlaundromat.org#",
         sparqlEndpoint : "http://sparql.backend.lodlaundromat.org",
