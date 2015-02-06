@@ -151,6 +151,7 @@ http.createServer(function (req, res) {
       if (!parsedUri.scheme()) {
           //no scheme? try with http before
           var testParse = new iri.IRI('http://' + args.url);
+          
           if (testParse.authority() && testParse.scheme()) {
             var reasonphrase = JSON.stringify({success: false, alternative: 'http://' + args.url, reason: 'Did you mean http://' + args.url + '?'});
             res.writeHead(400, {
@@ -174,6 +175,11 @@ http.createServer(function (req, res) {
 		utils.sendReponse(res, 400, 'No seed item given as argument');
 		utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
 	} else {
+	    console.log(parsedUri.authority());
+	    if (endsWith(parsedUri.authority(), 'lodlaundromat.org') || endsWith(parsedUri.authority(), 'lodlaundromat.d2s.labs.vu.nl')) {
+	        return utils.sendReponse(res, 400, 'Don"t re-feed the LOD Laundromat please!');
+	    }
+	    
 	    if (!(parsedUri.scheme().toLowerCase() in config.seedlistUpdater.supportedSchemes)) {
 	        utils.sendReponse(res,400, 'URIs with scheme "' + parsedUri.scheme() + '" are not yet supported. You can enter a feature request on Github');
             utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
@@ -198,6 +204,9 @@ function sleep(seconds, callback) {
     , seconds * 1000);
 }
 
+function endsWith(str, suffix) {
+    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+}
 
 var checkLazyList = function() {
 	sleep(config.seedlistUpdater.checkLazyListInterval, function() {
