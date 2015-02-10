@@ -175,7 +175,7 @@ http.createServer(function (req, res) {
 		utils.sendReponse(res, 400, 'No seed item given as argument');
 		utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
 	} else {
-	    console.log(parsedUri.authority());
+	    //console.log(parsedUri.authority());
 	    if (endsWith(parsedUri.authority(), 'lodlaundromat.org') || endsWith(parsedUri.authority(), 'lodlaundromat.d2s.labs.vu.nl')) {
 	        return utils.sendReponse(res, 400, 'Don"t re-feed the LOD Laundromat please!');
 	    }
