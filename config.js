@@ -1,9 +1,9 @@
 module.exports = {
-    llVersion : 11,
+    llVersion : 12,
     loggingDir : "/home/lodlaundromat/log",
     fileHosting : {
         port : 8686,
-        dataDir : "/scratch/lodlaundromat/",
+        dataDir : "/scratch/lodlaundromat/crawls/",
     },
     seedlistUpdater : {
         port : 8989,
