@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 var datasetsDir = "/scratch/lodlaundromat/crawls/12/";
 var targetFile = process.env.LDF_CONFIG;
 if (!process.argv[2]) {
@@ -9,8 +10,6 @@ if (!process.argv[2]) {
 
 var fs = require('fs'),
 path = require('path');
-
-
 
 if (!fs.existsSync(datasetsDir)) {
     console.log(datasetsDir + " does not exist");
@@ -41,7 +40,7 @@ fs.readdir(datasetsDir, function(err, datasetDirs) {
     datasetDirs.forEach(function(datasetDir) {
 	datasetDir = datasetsDir + datasetDir;
 	var hdtFile = datasetDir + "/clean.hdt";
-	if (fs.statSync(datasetDir).isDirectory() && fs.existsSync(hdtFile)) {
+	if (fs.existsSync(hdtFile)) {
 	    var external = getFilesizeInBytes(datasetDir) < 1000000000; //less than 1 Gb
             var md5 = path.basename(datasetDir);
             config.datasources[md5] = {
