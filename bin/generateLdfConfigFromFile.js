@@ -1,4 +1,5 @@
-#!/usr/bin/env node
+#!/usr/bin/node
+
 var currentVersion = "/12/";
 var targetFile = process.env.LDF_CONFIG;
 var hdtList = "/scratch/lodlaundromat/tmp/hdtQueue.txt"
@@ -14,7 +15,7 @@ path = require('path');
 
 if (!fs.existsSync(hdtList)) {
     console.log(hdtList + " does not exist");
-    process.exit(0);
+    process.exit(1);
 }
 
 var tmpFile = hdtList + ".tmp";
@@ -80,9 +81,11 @@ fs.readFile(tmpFile, function (err, data) {
 	} else {
 	    fs.writeFileSync(targetFile, JSON.stringify(config, null, '\t'));
 	}
+	process.exit(0);
     } else {
 	console.log("No new hdt files found in file. not updating config");
 	console.log(config.datasources);
+	process.exit(1);
     }
 });
 
