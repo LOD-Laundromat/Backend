@@ -272,7 +272,7 @@ var sendNotifications = function(emails, doc, isArchive, date) {
     var entries = {};
     var doSend = function() {
 
-        var jDate = new Date(date);
+        var jDate = new Date(date.replace(/-01:00$/,'+01:00'));//virtuoso does not seem to store the date in a correct manner...
 
         var getMainMsg = function(email, html) {
             var mainMsg = '';
