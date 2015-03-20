@@ -9,11 +9,14 @@ makeHdt $1
 #queue hdt file for ldf update
 echo $1 >> $hdtQueue;
 
-#analyze directory
-echo "Creating C-LOD file ($1)"
-streamDataset $1
-createModel $1
-storeModel $1
+#analyze directory (for now, only for gzipped files smaller than 1.5 Gb. had some scalability issues)
+size=`stat --printf="%s" $1/clean.*.gz`
+if [ $size -lt 1500000000 ]; then
+	echo "Creating C-LOD file ($1)"
+	streamDataset $1
+	createModel $1
+	storeModel $1
+ fi
 
 echo "Notify users"
 #do this as a daemon: we need to set this -after- the 'endClean' val has been set (i.e. after this script ends)
