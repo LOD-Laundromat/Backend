@@ -1,0 +1,50 @@
+#!/bin/bash
+
+makeHdt="/home/lodlaundromat/Git/hdt/hdt-lib/tools/rdf2hdt"
+makeHdtIndex="/home/lodlaundromat/Git/ldfServer/node_modules/hdt/bin/hdt --query '?s ?p ?o' --limit 1 "
+hdtFileName="clean.hdt"
+ssdDir="/ssd/lodlaundromat/tmp/hdt/"
+
+
+
+#cd $dataDumps;
+#echo "$dataDumps"
+#find $dataDumps -maxdepth 2 -type f -name '*.nq.gz';
+[ -z "$1" ] && echo "No dataset provided as argument" && exit 1;
+
+
+dataDir=$1
+
+
+if [ -d "$dataDir" ]; then
+    md5=`basename $dataDir`;
+	tmpHdtFile=$ssdDir/${md5}_${hdtFileName}
+    #it is a dir
+    if [ ! -f $dataDir/$hdtFileName ];then
+	echo "Creating hdt file for $dataDir"	#no hdt file yet, so lets create one
+	if [ -f "$dataDir/clean.nt.gz" ]; then
+	    #$makeHdt $dataDir/clean.nt.gz $dataDir/$hdtFileName;
+		$makeHdt $dataDir/clean.nt.gz $tmpHdtFile
+	elif  [ -f "$dataDir/clean.nq.gz" ]; then
+	tmpQuadConversionFile=$ssdDir/${md5}_unpackedNq;
+	    #hdt does not handle quads. modify to triple, and create hdt from that
+	    zcat $dataDir/clean.nq.gz | rapper -i nquads -o ntriples - http://somebase > $tmpQuadConversionFile 2> /dev/null;
+	    $makeHdt $tmpQuadConversionFile $tmpHdtFile;
+	    #remove tmp triple file
+	    rm $tmpQuadConversionFile;
+	fi
+	
+	if [ -f $tmpHdtFile ]; then
+	echo "creating index file at $tmpHdtFile"
+	    #we've created an hdt file. now create index as well
+	    eval "$makeHdtIndex $tmpHdtFile > /dev/null;"
+	echo "Moving files from ssd to regular disk"
+	mv $tmpHdtFile $dataDir/$hdtFileName;
+	mv ${tmpHdtFile}.index $dataDir/${hdtFileName}.index;
+	fi
+	
+    fi
+else 
+    echo "$dataDir is not a dir"
+fi
+

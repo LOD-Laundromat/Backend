@@ -1,0 +1,7 @@
+#!/bin/bash
+
+dataDumps=/scratch/lodlaundromat/crawls/12/
+
+for dataDir in $dataDumps/*; do
+    makeHdt $dataDir;
+done
