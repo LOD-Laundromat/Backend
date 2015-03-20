@@ -2,12 +2,14 @@ var util = require('util'),
     express = require('express'),
 	url = require('url'),
 	queryString = require('querystring'),
-	utils = require('./utils.js'),
+	utils = require('../utils.js'),
 	SimpleDb = require('simple-node-db'),
 	validator = require('validator'),
 	_ = require('lodash'),
 	request = require('superagent'),
-	config = require('./config.js');
+	nodemailer = require('nodemailer'),
+	nodemailer = require('nodemailer'),
+	config = require('../../config.js');
 
 
 if (!config.notifications.port) throw new Error('No port defined to run notifier on');
@@ -15,6 +17,8 @@ if (!config.notifications.checkInterval) throw new Error('No check interval defi
 if (!config.notifications.dbLocation) throw new Error('No db location specified for notifications');
 if (!config.notifications.sparqlEndpoint) throw new Error('No sparql endpoint specified for notifications');
 
+
+var transporter = nodemailer.createTransport();
 
 db = new SimpleDb({path:config.notifications.dbLocation});
 
@@ -203,7 +207,6 @@ app.get('/check/', function(req, res) {
                 .set('Accept', 'application/json')
                 .end(function(err, sparqlRes){
                     if (err && err.status >= 400) return res.status(err.status).send(err.response.text);
-//                    console.log(sparqlRes.body);
                     if (sparqlRes.body.results.bindings.length == 0) return res.send('nothing done yet');
                     var binding = sparqlRes.body.results.bindings[0];
                     if (_.size(binding) == 0) return res.send('nothing done yet');
@@ -245,19 +248,30 @@ app.get('/check/', function(req, res) {
     });
     
 })
-var server = app.listen(config.notifications.port, function () {
-    console.log('> Notification backend running on ' + config.notifications.port)
-})
+
+
+var sendNotification = function(email, msg) {
+  console.log('send notification to ', email, 'with message', msg);
+  transporter.sendMail({
+      from: config.notifications.email,
+      to: email,
+      subject: 'subject',
+      text: msg
+  });
+};
+//var server = app.listen(config.notifications.port, function () {
+//console.log('> Notification backend running on ' + config.notifications.port)
+//})
+
+sendNotification('laurens.rietveld@gmail.com', 'somemsg');
 
 var numEmailsInModel = function(model) {
-    
     var numEmails = 0;
     _.forEach(model, function(val, key) {
        if (key.indexOf('@') >= 0) {
            numEmails++;
        }  
     })
-    console.log('num', numEmails);
     return numEmails;
 }
 

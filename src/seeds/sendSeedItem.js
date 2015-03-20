@@ -1,4 +1,4 @@
-var 	config = require('./config.js'),
+var config = require('../../config.js'),
 	http = require('http'),
 	request = require('request'),
 	md5 = require('MD5'),

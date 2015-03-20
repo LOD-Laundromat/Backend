@@ -40,6 +40,7 @@ module.exports = {
         checkInterval : 20,
         dbLocation: 'notification.db',
         sparqlEndpoint : "http://sparql.backend.lodlaundromat.org",
-        baseUri: "http://localhost:9191/"
+        baseUri: "http://localhost:9191/",
+        email: 'notification@lodlaundromat.org'
     }
 };

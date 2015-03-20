@@ -4,9 +4,9 @@ var util = require('util'),
 	iri = require('node-iri'),
 	request = require('request'),
 	queryString = require('querystring'),
-	utils = require('./utils.js'),
+	utils = require('../utils.js'),
 	seedlistUpdater = require('./sendSeedItem.js'),
-	config = require('./config.js');
+	config = require('../../config.js');
 
 /**
  * Run seed list updater server

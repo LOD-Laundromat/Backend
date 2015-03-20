@@ -3,8 +3,8 @@ var util = require('util'),
 	fs = require('fs'),
 	url = require('url'),
 	path = require('path'),
-	utils = require('./utils.js'),
-	config = require('./config.js');
+	utils = require('../utils.js'),
+	config = require('../../config.js');
 
 
 if (!config.fileHosting.dataDir) throw new Error('No data directory defined');
