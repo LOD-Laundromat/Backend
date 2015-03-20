@@ -48,11 +48,11 @@ fs.readFile(tmpFile, function (err, data) {
     if (bufferString.length > 0) {
 	var hdts = bufferString.split('\n'); 
 	if (hdts.length > 0) {
-	    hdts.forEach(function(hdtFile){
-		hdtFile = hdtFile.trim();
+	    hdts.forEach(function(hdtDir){
+		var hdtFile = hdtDir.trim() + '/clean.hdt';
 		if (hdtFile.indexOf(currentVersion) >= 0 && fs.existsSync(hdtFile)) {
-		    var external = getFilesizeInBytes < 1000000000; //less than 1 Gb
-		    var md5 = path.basename(hdtFile);
+		    var external = getFilesizeInBytes(hdtFile) < 1000000000; //less than 1 Gb
+		    var md5 = path.basename(hdtDir);
 		    config.datasources[md5] = {
 			type: "HdtDatasource",
 			settings: {

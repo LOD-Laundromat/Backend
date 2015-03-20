@@ -41,7 +41,7 @@ fs.readdir(datasetsDir, function(err, datasetDirs) {
 	datasetDir = datasetsDir + datasetDir;
 	var hdtFile = datasetDir + "/clean.hdt";
 	if (fs.existsSync(hdtFile)) {
-	    var external = getFilesizeInBytes(datasetDir) < 1000000000; //less than 1 Gb
+	    var external = getFilesizeInBytes(hdtFile) < 1000000000; //less than 1 Gb
             var md5 = path.basename(datasetDir);
             config.datasources[md5] = {
 		type: "HdtDatasource",
