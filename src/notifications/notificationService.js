@@ -225,9 +225,8 @@ app.get('/check/', function(req, res) {
                     var emailList = [];
                     
                     //get the email addresses to notify
-                    db.find(query.doc, function(err, model) {
-                        if (err) return res.status(500).send(err);
-                        
+	            db.find(doc, function(err, model) {
+			if (err) return res.status(500).send(err);
                         
                         //loop through email addresses
                         _.forEach(model, function(val, emailAdress) {
@@ -236,10 +235,10 @@ app.get('/check/', function(req, res) {
                                 if (binding['endClean'] && !('endClean' in val)) {
                                     //we should send a notification (this status has not been notified before)
                                     model[emailAdress]['endClean'] = new Date();
-                                    db.update(query.doc, model, function(){});
+                                    db.update(doc, model, function(){});
                                     request
                                         .get(config.notifications.baseUri + 'unwatch/')
-                                        .query({doc: query.doc})
+                                        .query({doc: doc})
                                         .query({email: emailAdress})
                                         .end(function(err, sparqlRes){
                                         });
