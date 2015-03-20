@@ -14,7 +14,6 @@ if (fs.existsSync(outFileName)) fs.unlinkSync(outFileName);
 var urlsToCheck = [];
 if (process.argv.length > 2) {
 	urlsToCheck.push(process.argv[2]);
-	
 }
 
 if (urlsToCheck.length == 0) {

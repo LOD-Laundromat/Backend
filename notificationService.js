@@ -1,0 +1,279 @@
+var util = require('util'),  
+    express = require('express'),
+	url = require('url'),
+	queryString = require('querystring'),
+	utils = require('./utils.js'),
+	SimpleDb = require('simple-node-db'),
+	validator = require('validator'),
+	_ = require('lodash'),
+	request = require('superagent'),
+	config = require('./config.js');
+
+
+if (!config.notifications.port) throw new Error('No port defined to run notifier on');
+if (!config.notifications.checkInterval) throw new Error('No check interval defined to check notifications with');
+if (!config.notifications.dbLocation) throw new Error('No db location specified for notifications');
+if (!config.notifications.sparqlEndpoint) throw new Error('No sparql endpoint specified for notifications');
+
+
+db = new SimpleDb({path:config.notifications.dbLocation});
+
+var app = express();
+
+
+
+app.get('/watch/', function(req,res){
+    var query = url.parse(req.url, true).query;
+    if (!query.doc) return res.status(500).send('?doc parameter required');
+    if (!query.email) return res.status(500).send('?email parameter required');
+    if (!validator.isEmail(query.email)) return res.status(500).send('Not a valid email address: ' + query.email);
+    
+    db.queryKeys( null, function(err, keys) {
+        if (err) return res.status(500).send(err);
+        if (_.includes(keys, query.doc)) {
+            //update
+            db.find(query.doc, function(err, model) {
+                if (err) return res.status(500).send(err);
+                if (model[query.email]) return res.status(409).send('You are already watching this document for changes');
+                model[query.email] = {};
+                db.update(query.doc, model, function(err, model){
+                    if (err) return res.status(500).send(err);
+                    return res.send("Success");
+                })
+            })
+            
+        } else {
+            //insert
+            var model = {};
+            model[query.email] = {};
+            db.insert(query.doc, model, function(err, model){
+                if (err) return res.status(500).send(err);
+                res.send("Success");
+            })
+        }
+    });
+    
+});
+
+app.get('/unsubsribe/', function(req,res){
+    var query = url.parse(req.url, true).query;
+    if (!query.email) return res.status(500).send('?email parameter required');
+    //loop through documents, and remove watch items for this email
+    db.queryKeys( null, function(err, keys) {
+        if (err) return res.status(500).send(err);
+        if (keys.length == 0) return res.status(200).send('nothing to unsubscribe from');
+        var queue = 0;
+        var somethingDeleted = false;
+        _.forEach(keys, function(key) {
+            queue++;
+            db.find(key, function(err, model) {
+                if (err) return res.status(500).send(err);
+                if (model[query.email]) {
+                    //remove if this is only entry
+                    if (_.size(model) == 1) {
+                        db['delete'](key, function(err, model) {
+                            if (err) return res.status(500).send(err);
+                            queue--;
+                            somethingDeleted = true;
+                            if (queue <= 0) return res.send('successfully unsubscribed')
+                        })
+                    } else {
+                        delete model[query.email];
+                        db.update(key, model, function(err, model) {
+                            
+                            if (err) return res.status(500).send(err);
+                            queue--;
+                            somethingDeleted = true;
+                            if (queue <= 0) return res.send('successfully unsubscribed')
+                        });
+                    }
+                    //update if there are more entries
+                } else {
+                    queue--;
+                    if (queue <= 0) return res.send(somethingDeleted?'successfully unsubscribed': 'nothing to delete')
+                }
+            });
+        })
+    });
+});
+
+app.get('/unwatch/', function(req,res){
+    var query = url.parse(req.url, true).query;
+    if (!query.doc) return res.status(500).send('?doc parameter required');
+    if (!query.email) return res.status(500).send('?email parameter required');
+    
+    db.queryKeys( null, function(err, keys) {
+        if (err) return res.status(500).send(err);
+        if (_.includes(keys, query.doc)) {
+            //update
+            db.find(query.doc, function(err, model) {
+                if (err) return res.status(500).send(err);
+                if (model[query.email]) {
+                    if (numEmailsInModel(model) == 1) {
+                        db['delete'](query.doc, function(err, model) {
+                            if (err) return res.status(500).send(err);
+                            return res.send('successfully unwatched')
+                        })
+                    } else {
+                        delete model[query.email];
+                        db.update(query.doc, model, function(err, model) {
+                            if (err) return res.status(500).send(err);
+                            return res.send('successfully unwatched')
+                        });
+                    }
+                } else {
+                    return res.status(400).send("document was not watched anyway");
+                }
+            })
+            
+        } else {
+            return res.status(400).send("document not found");
+        }
+    });
+});
+/**
+ * i know, i know. Ugly. But this is just for debugging
+ */
+app.get('/info/', function(req,res){
+    var html = '';
+    var done = 0;
+    db.queryKeys( null, function(err, keys) {
+        if (keys.length == 0) res.send('no watches set');
+        _.forEach(keys, function(key) {
+            db.find(key, function(err, model) {
+                if (err) return res.status(500).send(err);
+                html += '<h3>' + key + '</h3><pre>' + JSON.stringify(model, null, '\t') + '</pre>';
+                done++;
+                if (done == keys.length) {
+                    res.send('<html><body>' + html + '</body></html>');
+                }
+            });
+        })
+    })
+});
+
+
+app.get('/mailInfo/', function(req,res){
+    var docs = {};
+    var query = url.parse(req.url, true).query;
+    if (!query.email) return res.status(500).send('?email parameter required');
+    db.queryKeys( null, function(err, keys) {
+        if (err) return res.status(500).send(err);
+        var queue = 0;
+        _.forEach(keys, function(key) {
+            queue++;
+            db.find(key, function(err, model) {
+                if (err) return res.status(500).send(err);
+                if (model[query.email]) {
+                    docs[key] = true;
+                }
+                queue--;
+                if (queue == 0) {
+                    res.send(docs);
+                }
+            });
+        })
+    })
+});
+
+
+
+app.get('/deleteDoc/', function(req,res){
+    var query = url.parse(req.url, true).query;
+    if (!query.doc) return res.status(500).send('?doc parameter required');
+    db['delete'](query.doc, function(err, model) {
+        if (err) return res.status(500).send(err);
+        return res.send('deleted ' + query.doc);
+    });
+});
+
+app.get('/check/', function(req, res) {
+    var query = url.parse(req.url, true).query;
+    var doc = null;
+    if (query.doc) {
+        doc = query.doc;
+    } else if (query.md5) {
+        doc = 'http://lodlaundromat.org/resource/' + query.md5;
+    }
+    db.queryKeys( null, function(err, keys) {
+        if (_.includes(keys, doc)) {
+            request
+                .post(config.notifications.sparqlEndpoint)
+                .query({ query: getSparqlQuery(doc)})
+                .set('Accept', 'application/json')
+                .end(function(err, sparqlRes){
+                    if (err && err.status >= 400) return res.status(err.status).send(err.response.text);
+//                    console.log(sparqlRes.body);
+                    if (sparqlRes.body.results.bindings.length == 0) return res.send('nothing done yet');
+                    var binding = sparqlRes.body.results.bindings[0];
+                    if (_.size(binding) == 0) return res.send('nothing done yet');
+                    
+                    
+                    //get the email addresses to notify
+                    db.find(query.doc, function(err, model) {
+                        if (err) return res.status(500).send(err);
+                        
+                        //loop through email addresses
+                        _.forEach(model, function(val, emailAdress) {
+                            if (validator.isEmail(emailAdress)) {
+                                //check whether there is something to send
+                                if (binding['endClean'] && !('endClean' in val)) {
+                                    //we should send a notification (this status has not been notified before)
+                                    model[emailAdress]['endClean'] = new Date();
+                                    db.update(query.doc, model, function(){});
+                                    sendNotification(emailAdress, 'endClean');
+                                    
+                                    request
+                                        .get(config.notifications.baseUri + 'unwatch/')
+                                        .query({doc: query.doc})
+                                        .query({email: emailAdress})
+                                        .end(function(err, sparqlRes){
+                                        });
+                                } else {
+                                    //only notify on 'clean'. just ignore this one!
+                                }
+                            }
+                        });
+                        
+                        
+                    })
+                    return res.send('done checking');
+                });
+        } else {
+            return res.send('fine. nobody is watching this doc');
+        }
+    });
+    
+})
+var server = app.listen(config.notifications.port, function () {
+    console.log('> Notification backend running on ' + config.notifications.port)
+})
+
+var numEmailsInModel = function(model) {
+    
+    var numEmails = 0;
+    _.forEach(model, function(val, key) {
+       if (key.indexOf('@') >= 0) {
+           numEmails++;
+       }  
+    })
+    console.log('num', numEmails);
+    return numEmails;
+}
+
+
+
+var prologue = "PREFIX ll: <http://lodlaundromat.org/resource/>\n\
+PREFIX llo: <http://lodlaundromat.org/ontology/>\n";
+var getSparqlQuery = function(doc) {
+    var getOptional = function(pred, obj) {
+        return 'OPTIONAL{<' + doc + '> ' + pred + ' ' + obj + ' .}\n';
+    }
+    var query = prologue + ' SELECT * WHERE {\n';
+    query += getOptional('llo:startUnpack', '?startUnpack');
+    query += getOptional('llo:endUnpack', '?endUnpack');
+    query += getOptional('llo:startClean', '?startClean');
+    query += getOptional('llo:endClean', '?endClean');
+    query += '} limit 1';
+    return query;
+}
