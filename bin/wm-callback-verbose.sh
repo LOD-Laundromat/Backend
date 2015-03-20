@@ -16,5 +16,7 @@ createModel $1
 storeModel $1
 
 echo "Notify users"
-curl http://notify.lodlaundromat.d2s.labs.vu.nl/check?md5=$md5
+#do this as a daemon: we need to set this -after- the 'endClean' val has been set (i.e. after this script ends)
+# should have a better callback system, but for now, just use this deamon and a sleep function
+notify $1 &
 exit 0;
