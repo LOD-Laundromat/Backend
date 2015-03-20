@@ -221,12 +221,13 @@ app.get('/check/', function(req, res) {
                     if (sparqlRes.body.results.bindings.length == 0) return res.send('nothing done yet');
                     var binding = sparqlRes.body.results.bindings[0];
                     if (_.size(binding) == 0) return res.send('nothing done yet');
-                    var isArchive = binding.type && binding.type.value == 'http://lodlaundromat.org/ontology/Archive';
+                    var url = null;
+                    if (binding.url) url = binding.url.value;
                     var emailList = [];
                     
                     //get the email addresses to notify
-	            db.find(doc, function(err, model) {
-			if (err) return res.status(500).send(err);
+                    db.find(doc, function(err, model) {
+	                if (err) return res.status(500).send(err);
                         
                         //loop through email addresses
                         _.forEach(model, function(val, emailAdress) {
@@ -251,7 +252,7 @@ app.get('/check/', function(req, res) {
                         if (emailList.length == 0) {
                             return res.send('watchers were already notified');
                         } else {
-                            sendNotifications(emailList, doc, isArchive, binding['endClean'].value);
+                            sendNotifications(emailList, doc, url, binding['endClean'].value);
                             return res.send('emails send');
                         }
                         
@@ -267,8 +268,8 @@ app.get('/check/', function(req, res) {
 })
 
 
-var sendNotifications = function(emails, doc, isArchive, date) {
-    
+var sendNotifications = function(emails, doc, url, date) {
+    var isArchive = !url;
     var entries = {};
     var doSend = function() {
 
@@ -278,7 +279,7 @@ var sendNotifications = function(emails, doc, isArchive, date) {
             var mainMsg = '';
             var archiveMsg = 'Note that this file was an archive and contained other '
             if (html) {
-                mainMsg = '<p><a href="' + doc + '" target="_blank">' + doc
+                mainMsg = '<p><a href="' + doc + '" target="_blank">' + (url? url: doc)
                         + '</a> finished cleaning at ' + jDate + '<p>';
                 if (_.size(entries) > 0) {
                     
@@ -399,7 +400,7 @@ var getSparqlQuery = function(doc) {
     query += getOptional('llo:endUnpack', '?endUnpack');
     query += getOptional('llo:startClean', '?startClean');
     query += getOptional('llo:endClean', '?endClean');
-    query += getOptional('a', '?type');
+    query += getOptional('llo:url', '?url');
     query += '} limit 1';
     return query;
 }
