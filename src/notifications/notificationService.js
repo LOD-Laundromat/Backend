@@ -32,34 +32,43 @@ app.get('/watch/', function(req,res){
     if (!query.email) return res.status(500).send('?email parameter required');
     if (!validator.isEmail(query.email)) return res.status(500).send('Not a valid email address: ' + query.email);
     
-    db.queryKeys( null, function(err, keys) {
-        if (err) return res.status(500).send(err);
-        if (_.includes(keys, query.doc)) {
-            //update
-            db.find(query.doc, function(err, model) {
-                if (err) return res.status(500).send(err);
-                if (model[query.email]) return res.status(409).send('You are already watching this document for changes');
-                model[query.email] = {};
-                db.update(query.doc, model, function(err, model){
+    //first check whether this one is still in the pipeline (if its cleaned already, there is no use watching it)
+    
+    
+    getCleanedDate(query.doc, function(cleaned) {
+        if (cleaned) return res.status(409).send('This document was already cleaned at ' + cleaned + '. I.e., no need to watch it');
+        db.queryKeys( null, function(err, keys) {
+            if (err) return res.status(500).send(err);
+            if (_.includes(keys, query.doc)) {
+                //update
+                db.find(query.doc, function(err, model) {
                     if (err) return res.status(500).send(err);
-                    return res.send("Success");
+                    if (model[query.email]) return res.status(409).send('You are already watching this document for changes');
+                    model[query.email] = {};
+                    db.update(query.doc, model, function(err, model){
+                        if (err) return res.status(500).send(err);
+                        return res.send("Success");
+                    })
                 })
-            })
-            
-        } else {
-            //insert
-            var model = {};
-            model[query.email] = {};
-            db.insert(query.doc, model, function(err, model){
-                if (err) return res.status(500).send(err);
-                res.send("Success");
-            })
-        }
+                
+            } else {
+                //insert
+                var model = {};
+                model[query.email] = {};
+                db.insert(query.doc, model, function(err, model){
+                    if (err) return res.status(500).send(err);
+                    res.send("Success");
+                })
+            }
+        });
     });
+    
+    
+    
     
 });
 
-app.get('/unsubsribe/', function(req,res){
+app.get('/unsubscribe/', function(req,res){
     var query = url.parse(req.url, true).query;
     if (!query.email) return res.status(500).send('?email parameter required');
     //loop through documents, and remove watch items for this email
@@ -191,6 +200,8 @@ app.get('/deleteDoc/', function(req,res){
     });
 });
 
+
+
 app.get('/check/', function(req, res) {
     var query = url.parse(req.url, true).query;
     var doc = null;
@@ -210,11 +221,13 @@ app.get('/check/', function(req, res) {
                     if (sparqlRes.body.results.bindings.length == 0) return res.send('nothing done yet');
                     var binding = sparqlRes.body.results.bindings[0];
                     if (_.size(binding) == 0) return res.send('nothing done yet');
-                    
+                    var isArchive = binding.type && binding.type.value == 'http://lodlaundromat.org/ontology/Archive';
+                    var emailList = [];
                     
                     //get the email addresses to notify
                     db.find(query.doc, function(err, model) {
                         if (err) return res.status(500).send(err);
+                        
                         
                         //loop through email addresses
                         _.forEach(model, function(val, emailAdress) {
@@ -224,23 +237,28 @@ app.get('/check/', function(req, res) {
                                     //we should send a notification (this status has not been notified before)
                                     model[emailAdress]['endClean'] = new Date();
                                     db.update(query.doc, model, function(){});
-                                    sendNotification(emailAdress, doc, binding['endClean'].value);
-                                    
                                     request
                                         .get(config.notifications.baseUri + 'unwatch/')
                                         .query({doc: query.doc})
                                         .query({email: emailAdress})
                                         .end(function(err, sparqlRes){
                                         });
+                                    emailList.push(emailAdress);
                                 } else {
                                     //only notify on 'clean'. just ignore this one!
                                 }
                             }
                         });
+                        if (emailList.length == 0) {
+                            return res.send('watchers were already notified');
+                        } else {
+                            sendNotifications(emailList, doc, isArchive, binding['endClean'].value);
+                            return res.send('emails send');
+                        }
                         
                         
                     })
-                    return res.send('done checking');
+                    
                 });
         } else {
             return res.send('fine. nobody is watching this doc');
@@ -250,54 +268,115 @@ app.get('/check/', function(req, res) {
 })
 
 
-var sendNotification = function(email, doc, date) {
-    var jDate = new Date(date);
+var sendNotifications = function(emails, doc, isArchive, date) {
     
-    
-  var getMainMsg = function(html) {
-      var mainMsg = '';
-      
-      if (html) {
-          mainMsg = '<p><a href="' + doc + '" target="_blank">' + doc + '</a> finished cleaning at ' + jDate + '</p>';
-      } else {
-          mainMsg = doc + ' finished cleaning at ' + jDate;
-      }
-     return mainMsg;
-  }
-  var getSubMsg = function(html) {
-      var unsubscribeLink = config.notifications.baseUri + 'unsubscribe/?email=' + encodeURIComponent(email);
-      var subMsg = 'To unsubscribe from any other LOD Laundromat email message, click ';
-      if (html) {
-          subMsg = '<hr><p style="font-size:small;color:#666">' + subMsg +  '<a href="' + unsubscribeLink + '" target="_blank">here</a></p>';
-      } else {
-          subMsg += unsubscribeLink;
-      }
-      return subMsg;
-  };
-  
-  
-  //Action does not work (see https://developers.google.com/gmail/markup/registering-with-google for requirements)
-  //still keep this here, perhaps for future use
-  var emailAction = '<div itemscope itemtype="http://schema.org/EmailMessage">\
-      <div itemprop="action" itemscope itemtype="http://schema.org/ViewAction">\
-        <link itemprop="url" href="' + doc + '"></link>\
-        <meta itemprop="name" content="View Document"></meta>\
-      </div>\
-      <meta itemprop="description" content="View this LOD Laundromat Document"></meta>\
-    </div>';
+    var entries = {};
+    var doSend = function() {
 
-  transporter.sendMail({
-      from: config.notifications.email,
-      to: email,
-      subject: '[LOD Laundromat] ' + doc + ' status change',
-      text: getMainMsg() + '\n\n' + getSubMsg(),
-      html: getMainMsg(true) + getSubMsg(true) + emailAction
-  });
+        var jDate = new Date(date);
+
+        var getMainMsg = function(email, html) {
+            var mainMsg = '';
+            var archiveMsg = 'Note that this file was an archive and contained other '
+            if (html) {
+                mainMsg = '<p><a href="' + doc + '" target="_blank">' + doc
+                        + '</a> finished cleaning at ' + jDate + '<p>';
+                if (_.size(entries) > 0) {
+                    
+                    mainMsg += '<p>Note that this file was an archive and contained other entries which are queued for cleaning. The list includes:<ul>';
+                    _.forEach(entries, function(path, entry) {
+                        subscribeLink = config.notifications.baseUri + 'watch/?email=' + encodeURIComponent(email) + '&doc=' + encodeURIComponent(entry);
+                        mainMsg += '<li><a href="' + entry + '" target="_blank">' + path + '</a> <a href="' + subscribeLink + '" target="_blank" style="font-style: italic;font-size:x-small">Notify me on changes</a>';
+                    });
+                    mainMsg += '</ul></p>';
+                }
+                    
+                mainMsg += '</p>';
+            } else {
+                mainMsg = doc + ' finished cleaning at ' + jDate + '.';
+            }
+            return mainMsg;
+        }
+        var getSubMsg = function(email, html) {
+            var unsubscribeLink = config.notifications.baseUri + 'unsubscribe/?email=' + encodeURIComponent(email);
+            var subMsg = 'To unsubscribe from all LOD Laundromat email message, click ';
+            if (html) {
+                subMsg = '<hr><p style="font-size:small;color:#666">' + subMsg
+                        + '<a href="' + unsubscribeLink
+                        + '" target="_blank">here</a></p>';
+            } else {
+                subMsg += unsubscribeLink;
+            }
+            return subMsg;
+        };
+
+        // Action does not work (see
+        // https://developers.google.com/gmail/markup/registering-with-google for
+        // requirements)
+        // still keep this here, perhaps for future use
+        var emailAction = '<div itemscope itemtype="http://schema.org/EmailMessage">\
+          <div itemprop="action" itemscope itemtype="http://schema.org/ViewAction">\
+            <link itemprop="url" href="'
+                    + doc
+                    + '"></link>\
+            <meta itemprop="name" content="View Document"></meta>\
+          </div>\
+          <meta itemprop="description" content="View this LOD Laundromat Document"></meta>\
+        </div>';
+        
+        _.forEach(emails, function(email) {
+            transporter.sendMail({
+                from : config.notifications.email,
+                to : email,
+                subject : '[LOD Laundromat] ' + doc + ' status change',
+                text : getMainMsg(email) + '\n\n' + getSubMsg(email),
+                html : getMainMsg(email, true) + getSubMsg(email, true) + emailAction
+            });
+        })
+    }
+    
+    if (isArchive) {
+        request
+            .post(config.notifications.sparqlEndpoint)
+            .query({ query: getEntriesQuery(doc)})
+            .set('Accept', 'application/json')
+            .end(function(err, sparqlRes){
+                if (err && err.status >= 400) return doSend();
+                if (sparqlRes.body.results.bindings.length == 0) return doSend();//no entries
+                _.forEach(sparqlRes.body.results.bindings, function(binding) {
+                    if (binding.entry && binding.entry.value) {
+                        entries[binding.entry.value] = binding.path.value;
+                    } 
+                });
+                doSend();
+            })
+    } else {
+        doSend();
+    }
+    
+    
 };
+
+
 var server = app.listen(config.notifications.port, function () {
-console.log('> Notification backend running on ' + config.notifications.port)
+    console.log('> Notification backend running on ' + config.notifications.port)
 })
 
+var prologue = "PREFIX ll: <http://lodlaundromat.org/resource/>\n\
+PREFIX llo: <http://lodlaundromat.org/ontology/>\n";
+var getCleanedDate = function(doc, callback) {
+    var query = prologue + ' SELECT * WHERE {<'+doc+'> llo:endClean ?endClean} LIMIT 1';
+    request
+        .post(config.notifications.sparqlEndpoint)
+        .query({ query: query})
+        .set('Accept', 'application/json')
+        .end(function(err, sparqlRes){
+            if (err && err.status >= 400) return callback(null);
+            if (sparqlRes.body.results.bindings.length == 0) return callback(null);
+            var binding = sparqlRes.body.results.bindings[0];
+            return callback(new Date(binding.endClean.value));
+        })
+}
 
 var numEmailsInModel = function(model) {
     var numEmails = 0;
@@ -311,8 +390,7 @@ var numEmailsInModel = function(model) {
 
 
 
-var prologue = "PREFIX ll: <http://lodlaundromat.org/resource/>\n\
-PREFIX llo: <http://lodlaundromat.org/ontology/>\n";
+
 var getSparqlQuery = function(doc) {
     var getOptional = function(pred, obj) {
         return 'OPTIONAL{<' + doc + '> ' + pred + ' ' + obj + ' .}\n';
@@ -322,6 +400,15 @@ var getSparqlQuery = function(doc) {
     query += getOptional('llo:endUnpack', '?endUnpack');
     query += getOptional('llo:startClean', '?startClean');
     query += getOptional('llo:endClean', '?endClean');
+    query += getOptional('a', '?type');
     query += '} limit 1';
+    return query;
+}
+var getEntriesQuery = function(archiveDoc) {
+    var query = prologue + ' SELECT DISTINCT ?entry ?path WHERE {\n';
+    query += '<' + archiveDoc + '> llo:containsEntry ?entry .\n';
+    query += '  ?entry llo:path ?path .';
+    //query += 'MINUS{<' + archiveDoc + '> llo:endClean []}'
+    query += '}';
     return query;
 }
