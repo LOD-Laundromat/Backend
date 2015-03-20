@@ -22,7 +22,7 @@ module.exports = {
         }
     },
     datadumps : {
-	totalFile: 'dump',
+        totalFile: 'dump',
         extension: ".nt.gz",
         dumpLocation : "/scratch/lodlaundromat/dumps/",
         graphs : {
@@ -34,5 +34,12 @@ module.exports = {
 	    llOntology: "http://lodlaundromat.org/ontology#llo",
 	    metricsOntology: "http://lodlaundromat.org/ontology#llm"
         }
+    },
+    notifications : {
+        port: 9191,
+        checkInterval : 20,
+        dbLocation: 'notification.db',
+        sparqlEndpoint : "http://sparql.backend.lodlaundromat.org",
+        baseUri: "http://localhost:9191/"
     }
 };

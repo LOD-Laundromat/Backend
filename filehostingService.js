@@ -13,7 +13,7 @@ if (!config.fileHosting.port) throw new Error('No port defined to run  file host
 if (!config.llVersion) throw new Error('No version defined to serve files for');
 
 if (!config.loggingDir) throw new Error("No logging dir specified");
-if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir does not exist");
+if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir (" + config.loggingDir + ") does not exist");
 
 
 
