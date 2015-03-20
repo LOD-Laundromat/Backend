@@ -224,7 +224,7 @@ app.get('/check/', function(req, res) {
                                     //we should send a notification (this status has not been notified before)
                                     model[emailAdress]['endClean'] = new Date();
                                     db.update(query.doc, model, function(){});
-                                    sendNotification(emailAdress, 'endClean');
+                                    sendNotification(emailAdress, doc, binding['endClean'].value);
                                     
                                     request
                                         .get(config.notifications.baseUri + 'unwatch/')
@@ -250,20 +250,54 @@ app.get('/check/', function(req, res) {
 })
 
 
-var sendNotification = function(email, msg) {
-  console.log('send notification to ', email, 'with message', msg);
+var sendNotification = function(email, doc, date) {
+    var jDate = new Date(date);
+    
+    
+  var getMainMsg = function(html) {
+      var mainMsg = '';
+      
+      if (html) {
+          mainMsg = '<p><a href="' + doc + '" target="_blank">' + doc + '</a> finished cleaning at ' + jDate + '</p>';
+      } else {
+          mainMsg = doc + ' finished cleaning at ' + jDate;
+      }
+     return mainMsg;
+  }
+  var getSubMsg = function(html) {
+      var unsubscribeLink = config.notifications.baseUri + 'unsubscribe/?email=' + encodeURIComponent(email);
+      var subMsg = 'To unsubscribe from any other LOD Laundromat email message, click ';
+      if (html) {
+          subMsg = '<hr><p style="font-size:small;color:#666">' + subMsg +  '<a href="' + unsubscribeLink + '" target="_blank">here</a></p>';
+      } else {
+          subMsg += unsubscribeLink;
+      }
+      return subMsg;
+  };
+  
+  
+  //Action does not work (see https://developers.google.com/gmail/markup/registering-with-google for requirements)
+  //still keep this here, perhaps for future use
+  var emailAction = '<div itemscope itemtype="http://schema.org/EmailMessage">\
+      <div itemprop="action" itemscope itemtype="http://schema.org/ViewAction">\
+        <link itemprop="url" href="' + doc + '"></link>\
+        <meta itemprop="name" content="View Document"></meta>\
+      </div>\
+      <meta itemprop="description" content="View this LOD Laundromat Document"></meta>\
+    </div>';
+
   transporter.sendMail({
       from: config.notifications.email,
       to: email,
-      subject: 'subject',
-      text: msg
+      subject: '[LOD Laundromat] ' + doc + ' status change',
+      text: getMainMsg() + '\n\n' + getSubMsg(),
+      html: getMainMsg(true) + getSubMsg(true) + emailAction
   });
 };
-//var server = app.listen(config.notifications.port, function () {
-//console.log('> Notification backend running on ' + config.notifications.port)
-//})
+var server = app.listen(config.notifications.port, function () {
+console.log('> Notification backend running on ' + config.notifications.port)
+})
 
-sendNotification('laurens.rietveld@gmail.com', 'somemsg');
 
 var numEmailsInModel = function(model) {
     var numEmails = 0;
