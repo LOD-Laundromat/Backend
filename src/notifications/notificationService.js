@@ -28,9 +28,9 @@ var app = express();
 
 app.get('/watch/', function(req,res){
     var query = url.parse(req.url, true).query;
-    if (!query.doc) return res.status(500).send('?doc parameter required');
-    if (!query.email) return res.status(500).send('?email parameter required');
-    if (!validator.isEmail(query.email)) return res.status(500).send('Not a valid email address: ' + query.email);
+    if (!query.doc) return res.status(400).send('?doc parameter required');
+    if (!query.email) return res.status(400).send('?email parameter required');
+    if (!validator.isEmail(query.email)) return res.status(400).send('Not a valid email address: ' + query.email);
     
     //first check whether this one is still in the pipeline (if its cleaned already, there is no use watching it)
     
@@ -70,7 +70,7 @@ app.get('/watch/', function(req,res){
 
 app.get('/unsubscribe/', function(req,res){
     var query = url.parse(req.url, true).query;
-    if (!query.email) return res.status(500).send('?email parameter required');
+    if (!query.email) return res.status(400).send('?email parameter required');
     //loop through documents, and remove watch items for this email
     db.queryKeys( null, function(err, keys) {
         if (err) return res.status(500).send(err);
@@ -169,7 +169,7 @@ app.get('/info/', function(req,res){
 app.get('/mailInfo/', function(req,res){
     var docs = {};
     var query = url.parse(req.url, true).query;
-    if (!query.email) return res.status(500).send('?email parameter required');
+    if (!query.email) return res.status(400).send('?email parameter required');
     db.queryKeys( null, function(err, keys) {
         if (err) return res.status(500).send(err);
         var queue = 0;
