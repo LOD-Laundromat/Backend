@@ -21,18 +21,19 @@ if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir (" + config.
 /**
  * Run file hosting server
  */
-http.createServer(function (req, res) { 
+http.createServer(function (req, res) {
+    var setResHeader = function(file) {
+        res.setHeader('Content-disposition', 'attachment; filename=' + pathname + file.slice(-6));
+        res.setHeader('Content-Type', "application/x-gzip");
+        res.writeHead(200);
+    }
 	var sendDatasetFile = function(file) {
-		var contentType = "application/x-gzip";
 		var stream = fs.createReadStream(file);
 	    stream.on('error', function(error) {
 	    	utils.sendReponse(res, 500, 'Unable to send gzip file');
-	    	
 	    });
+	    setResHeader(file);
 	    //I know last 6 chars are extension (either nt.gz or nq.gz). Just use this knowledge (won't change)
-	    res.setHeader('Content-disposition', 'attachment; filename=' + pathname + file.slice(-6));
-	    res.setHeader('Content-Type', contentType);
-	    res.writeHead(200);
 	    stream.pipe(res);
 	    utils.logline('downloads.log',  [req.headers["user-agent"],pathname]);
 	};
@@ -95,21 +96,25 @@ http.createServer(function (req, res) {
 	                var cleanFile = datasetDir + '/clean' + extension;
 	                fs.exists(cleanFile, function(cleanFileExists) {
 	                    if (!cleanFileExists) {
-				    if (extension == ".nt.gz") {
-					//ah, no nt file! Check for an nq file..
-					var nqFile = datasetDir + '/clean.nq.gz';
-					fs.exists(nqFile, function(nqFileExists) {
-					    if (!nqFileExists) {
-						//no nq file AND no nt file..
-						utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
-					    } else {
-						sendDatasetFile(nqFile);
-					    }
-					});
-				    } else {
-					utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
-				    }
+        				    if (extension == ".nt.gz") {
+            					//ah, no nt file! Check for an nq file..
+            					var nqFile = datasetDir + '/clean.nq.gz';
+            					fs.exists(nqFile, function(nqFileExists) {
+            					    if (!nqFileExists) {
+                						//no nq file AND no nt file..
+                						utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
+            					    } else {
+            					        sendDatasetFile(nqFile);
+            					    }
+            					});
+        				    } else {
+    				            utils.sendReponse(res,404, 'No cleaned file found for this dataset.');
+        				    }
 	                    } else {
+	                        if (req.method == "HEAD") {
+	                            setResHeader(cleanFile);
+	                            return res.end();
+	                        }
 	                        sendDatasetFile(cleanFile);
 	                    }
 	                    
