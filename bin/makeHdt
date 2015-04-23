@@ -1,6 +1,6 @@
 #!/bin/bash
 
-makeHdt="/home/lodlaundromat/Git/hdt/hdt-lib/tools/rdf2hdt"
+makeHdt="/home/lodlaundromat/Git/hdt/hdt-lib/tools/rdf2hdt -f turtle"
 makeHdtIndex="/home/lodlaundromat/Git/ldfServer/node_modules/hdt/bin/hdt --query '?s ?p ?o' --limit 1 "
 hdtFileName="clean.hdt"
 ssdDir="/ssd/lodlaundromat/tmp/hdt/"
