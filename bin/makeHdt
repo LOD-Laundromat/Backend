@@ -1,6 +1,6 @@
 #!/bin/bash
 
-makeHdt="/home/lodlaundromat/Git/hdt/hdt-lib/tools/rdf2hdt -f turtle"
+makeHdt="/home/lodlaundromat/Git/hdt/hdt-lib/tools/rdf2hdt"
 makeHdtIndex="/home/lodlaundromat/Git/ldfServer/node_modules/hdt/bin/hdt --query '?s ?p ?o' --limit 1 "
 hdtFileName="clean.hdt"
 ssdDir="/ssd/lodlaundromat/tmp/hdt/"
@@ -26,10 +26,11 @@ if [ -d "$dataDir" ]; then
 	    #$makeHdt $dataDir/clean.nt.gz $dataDir/$hdtFileName;
 		$makeHdt $dataDir/clean.nt.gz $tmpHdtFile
 	elif  [ -f "$dataDir/clean.nq.gz" ]; then
-	tmpQuadConversionFile=$ssdDir/${md5}_unpackedNq;
+	    tmpQuadConversionFile=$ssdDir/${md5}_unpackedNq;
 	    #hdt does not handle quads. modify to triple, and create hdt from that
 	    zcat $dataDir/clean.nq.gz | rapper -i nquads -o ntriples - http://somebase > $tmpQuadConversionFile 2> /dev/null;
-	    $makeHdt $tmpQuadConversionFile $tmpHdtFile;
+	    #add turtle flag, to cope with unicode encoding of rapper
+	    $makeHdt -f turtle $tmpQuadConversionFile $tmpHdtFile;
 	    #remove tmp triple file
 	    rm $tmpQuadConversionFile;
 	fi
