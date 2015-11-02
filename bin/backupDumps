@@ -1,0 +1,7 @@
+#!/bin/bash
+#backup dumps
+rsync -avz --include '*.nt.gz' --exclude '/*/' /scratch/lodlaundromat/dumps/ /home/lodlaundromat/backup/dumps
+
+#backup of virtuoso is done by root crontab
+
+
