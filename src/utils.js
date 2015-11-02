@@ -5,7 +5,7 @@ module.exports = {
 			if (response) {
 				response.writeHead(statusCode, {
 				  'Content-Length': reasonPhrase.length,
-				  'Content-Type': 'text/plain' 
+				  'Content-Type': 'text/plain'
 				});
 				response.write(reasonPhrase);
 				response.end();
@@ -14,7 +14,7 @@ module.exports = {
 			}
 		},
 		logline: function(filename, messages) {
-			fs.appendFile(config.loggingDir + '/' + filename, new Date().toString() + ' - ' + messages.join(' - ') + '\n', function(){});
+			fs.appendFile(process.env['LOG_DIR'] + '/' + filename, new Date().toString() + ' - ' + messages.join(' - ') + '\n', function(){});
 		},
 		/**
 		 * warning: does not extens sub objects!
@@ -27,5 +27,5 @@ module.exports = {
 				}
 			});
 			return target;
-		} 
+		}
 };

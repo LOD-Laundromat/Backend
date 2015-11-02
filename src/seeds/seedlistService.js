@@ -1,4 +1,4 @@
-var util = require('util'),  
+var util = require('util'),
     http = require('http'),
 	url = require('url'),
 	iri = require('node-iri'),
@@ -14,7 +14,7 @@ var util = require('util'),
 if (!config.seedlistUpdater.graphApi) throw new Error('No graph API URL defined to send new seed list items to');
 if (!config.seedlistUpdater.washingMachineGraph) throw new Error('No washing machine graph defined to store new seed list items in');
 if (!config.seedlistUpdater.seedlistGraph) throw new Error('No seedlistGraph defined to store new seed list items in');
-if (!config.llVersion) throw new Error('No ll version defined');
+if (!process.env['CRAWL_ID']) throw new Error('No variable CRAWL_ID found');
 if (!config.seedlistUpdater.port) throw new Error('No port defined to run seed list API on');
 
 
@@ -42,7 +42,7 @@ var parsedUriToString = function(parsedUri) {
     return part.replace(/([\uA0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFEF]|[\uD800-\uDBFF][\uDC00-\uDFFF])/g, function(a){return encodeURI(a);});
   }
    return '' +
-      toUriString(parsedUri.scheme().toLowerCase()) + 
+      toUriString(parsedUri.scheme().toLowerCase()) +
       '://' +
       (parsedUri.authority()?toUriString(parsedUri.authority()):'') +
       (parsedUri.path()?toUriString(parsedUri.path()): '') +
@@ -89,7 +89,7 @@ var checkSeedsAlreadyAdded = function(seeds, finalCallback, i, seedsToAdd) {
 		checkSeedAlreadyAdded(seeds[i].url, function(alreadyAdded) {
 			if (alreadyAdded != null && alreadyAdded == false) seedsToAdd.push(seeds[i]);
 			checkSeedsAlreadyAdded(seeds, finalCallback, i+1, seedsToAdd);
-			
+
 		});
 	} else {
 		//we've reached the end
@@ -105,7 +105,7 @@ var addSeeds = function(req, res, type, seeds) {
 			//just 1 url, probably a user who'd like some feedback
 			utils.sendReponse(res,400, 'This seed is already in our list: ' + seeds[0].url);
 			return;
-		} 
+		}
 		if (seedsToAdd.length > 0) {
 			seedlistUpdater(type, seedsToAdd, function(success, body) {
 				if (success) {
@@ -120,10 +120,10 @@ var addSeeds = function(req, res, type, seeds) {
 			console.log("tried to add " + seeds.length + ", but added none. Is something wrong here?");
 		}
 	});
-	
-	
+
+
 //	request.post({url: config.seedlistUpdater.sparqlEndpoint, headers: { "Accept": "application/json"}, form: {query: query}}, function(error, response, body) {
-//		
+//
 //	});
 };
 
@@ -139,7 +139,7 @@ http.createServer(function (req, res) {
 		res.end();
 		return;
 	}
-	
+
 	var args = utils.extend({}, defaults, (url.parse(req.url, true).query));
 	if (args.type != "url" && args.type != "archive") {
 		utils.sendReponse(res,400, 'Unrecognized \'type\' argument: ' + args.type + '. Supported: [url|archive]');
@@ -151,12 +151,12 @@ http.createServer(function (req, res) {
       if (!parsedUri.scheme()) {
           //no scheme? try with http before
           var testParse = new iri.IRI('http://' + args.url);
-          
+
           if (testParse.authority() && testParse.scheme()) {
             var reasonphrase = JSON.stringify({success: false, alternative: 'http://' + args.url, reason: 'Did you mean http://' + args.url + '?'});
             res.writeHead(400, {
               'Content-Length': reasonphrase.length,
-              'Content-Type': 'application/json' 
+              'Content-Type': 'application/json'
             });
             res.write(reasonphrase);
             res.end();
@@ -167,7 +167,7 @@ http.createServer(function (req, res) {
             utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
             return;
           }
-	        
+
 	    }
 		args.url = args.url.trim();
 	}
@@ -176,10 +176,10 @@ http.createServer(function (req, res) {
 		utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
 	} else {
 	    //console.log(parsedUri.authority());
-	    if (endsWith(parsedUri.authority(), 'lodlaundromat.org') || endsWith(parsedUri.authority(), 'lodlaundromat.d2s.labs.vu.nl')) {
+	    if (endsWith(parsedUri.authority(), 'lodlaundromat.org') || endsWith(parsedUri.authority(), 'lodlaundromat.' + process.env['DOMAIN'])) {
 	        return utils.sendReponse(res, 400, 'Don"t re-feed the LOD Laundromat please!');
 	    }
-	    
+
 	    if (!(parsedUri.scheme().toLowerCase() in config.seedlistUpdater.supportedSchemes)) {
 	        utils.sendReponse(res,400, 'URIs with scheme "' + parsedUri.scheme() + '" are not yet supported. You can enter a feature request on Github');
             utils.logline('faultySeeds.log', [req.headers["user-agent"],args.url]);
@@ -189,11 +189,11 @@ http.createServer(function (req, res) {
                   return;
               } else {
                   addSeeds(req, res, args.type, [{url: parsedUriToString(parsedUri), from: args["from"]}]);
-                  
+
               }
 	    }
 	}
-	
+
 }).listen(config.seedlistUpdater.port);
 util.puts('> Seed list backend running on ' + config.seedlistUpdater.port);
 
@@ -213,7 +213,7 @@ var checkLazyList = function() {
 		if (lazySeeds.url.length > config.seedlistUpdater.maxSeedlistSize || (latestLazyAdded.url && (new Date() - latestLazyAdded.url) > (config.seedlistUpdater.maxSeedlistTime * 1000))) {
 			var urlLazySeeds = lazySeeds.url.slice(0,config.seedlistUpdater.maxSeedlistSize);//clone
 			lazySeeds.url = lazySeeds.url.slice(config.seedlistUpdater.maxSeedlistSize);
-			
+
 			addSeeds(null,null,"url", urlLazySeeds);
 			latestLazyAdded.url = null;
 		}

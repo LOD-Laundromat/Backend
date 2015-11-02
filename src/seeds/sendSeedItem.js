@@ -17,7 +17,7 @@ module.exports = function(type, seeds, callback) {
     	}
     	return turtle;
     };
-    var addToGraph = (type == "url"? config.seedlistUpdater.seedlistGraph: config.seedlistUpdater.washingMachineGraph + config.llVersion);
+    var addToGraph = (type == "url"? config.seedlistUpdater.seedlistGraph: config.seedlistUpdater.washingMachineGraph + process.env['CRAWL_ID']);
     var options = {
 	url: config.seedlistUpdater.graphApi + '?' + queryString.stringify({"graph-uri": addToGraph}),
 	headers: {
@@ -47,7 +47,7 @@ function xsdDateTime(date) {
 	var s = n.toString();
 	return s.length < 2 ? '0'+s : s;
     };
-    
+
     var yyyy = date.getFullYear();
     var mm1  = pad(date.getMonth()+1);
     var dd   = pad(date.getDate());

@@ -1,9 +1,6 @@
 module.exports = {
-    llVersion : 12,
-    loggingDir : "/home/lodlaundromat/log",
     fileHosting : {
         port : 8686,
-        dataDir : "/scratch/lodlaundromat/crawls/",
     },
     seedlistUpdater : {
         port : 8989,
@@ -24,7 +21,6 @@ module.exports = {
     datadumps : {
         totalFile: 'dump',
         extension: ".nt.gz",
-        dumpLocation : "/scratch/lodlaundromat/dumps/",
         graphs : {
             metrics : function() { return "http://lodlaundromat.org#metrics-" + module.exports.llVersion;},
             main : function() { return "http://lodlaundromat.org#" + module.exports.llVersion;},
@@ -40,7 +36,7 @@ module.exports = {
         checkInterval : 20,
         dbLocation: 'notification.db',
         sparqlEndpoint : "http://sparql.backend.lodlaundromat.org",
-        baseUri: "http://notify.lodlaundromat.d2s.labs.vu.nl/",
+        baseUri: "http://notify." + process.env["DOMAIN"] + "/",
         email: 'notification@lodlaundromat.org'
     }
 };

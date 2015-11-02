@@ -1,4 +1,4 @@
-var util = require('util'),  
+var util = require('util'),
     http = require('http'),
 	fs = require('fs'),
 	url = require('url'),
@@ -7,13 +7,13 @@ var util = require('util'),
 	config = require('../../config.js');
 
 
-if (!config.fileHosting.dataDir) throw new Error('No data directory defined');
-if (!fs.existsSync(config.fileHosting.dataDir)) throw new Error('Data directory not found: ' + config.dataDir);
+if (!process.env['CRAWL_DIR']) throw new Error('No CRAWL_DIR variable defined');
+if (!fs.existsSync(process.env['CRAWL_DIR'])) throw new Error('Data directory not found: ' + process.env['CRAWL_DIR']);
 if (!config.fileHosting.port) throw new Error('No port defined to run  file hosting server on');
-if (!config.llVersion) throw new Error('No version defined to serve files for');
 
-if (!config.loggingDir) throw new Error("No logging dir specified");
-if (!fs.existsSync(config.loggingDir)) throw new Error("Logging dir (" + config.loggingDir + ") does not exist");
+
+if (!process.env['LOG_DIR']) throw new Error("No LOG_DIR variable specified");
+if (!fs.existsSync(process.env['LOG_DIR'])) throw new Error("Logging dir (" + process.env['LOG_DIR'] + ") does not exist");
 
 
 
@@ -42,7 +42,7 @@ http.createServer(function (req, res) {
         var stream = fs.createReadStream(file);
         stream.on('error', function(error) {
             utils.sendReponse(res, 500, 'Unable to send gzip file');
-            
+
         });
         res.setHeader('Content-disposition', 'attachment; filename=' + filename);
         res.setHeader('Content-Type', contentType);
@@ -54,7 +54,7 @@ http.createServer(function (req, res) {
 	    if (path.indexOf(config.datadumps.extension, path.length - config.datadumps.extension.length) != -1) {
 	        var base = path.substring(0, path.length - config.datadumps.extension.length);
 	        if (base == config.datadumps.totalFile || base in config.datadumps.graphs) {
-	            var fileLocation = config.datadumps.dumpLocation + "/" + path;
+	            var fileLocation = process.env['DATA_DUMP_DIR'] + "/" + path;
 	            fs.stat(fileLocation, function(err, stat){
 	                if (err) {
 	                    callback(false);//file probably does not exist
@@ -63,8 +63,8 @@ http.createServer(function (req, res) {
 	                    callback(fileLocation, downloadFilename);
 	                }
 	            });
-	            
-	            
+
+
 	        } else {
 	            callback(false);
 	        }
@@ -87,7 +87,7 @@ http.createServer(function (req, res) {
 	        if (fileLocation) {
 	            sendDumpFile(fileLocation, downloadName);
 	        } else {
-	            var datasetDir = config.fileHosting.dataDir + '/' + config.llVersion + '/' + pathname;
+	            var datasetDir = process.env['CRAWL_DIR'] + '/' + pathname;
 	            fs.exists(datasetDir, function(datasetDirExists) {
 	                if (!datasetDirExists) {
 	                    utils.sendReponse(res,404, 'Dataset not found');
@@ -117,9 +117,9 @@ http.createServer(function (req, res) {
 	                        }
 	                        sendDatasetFile(cleanFile);
 	                    }
-	                    
+
 	                });
-	                
+
 	            });
 	        }
 	    });
