@@ -1,0 +1,6 @@
+#!/bin/bash
+
+[ -z "$1" ] && echo "Provide md5 as arg" && exit 1
+[ ! ${#1} -eq "32" ] && echo "Input $1 not a valid hash" && exit 1;
+
+echo ${1:0:2}/${1:2}
