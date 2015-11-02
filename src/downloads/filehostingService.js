@@ -87,7 +87,13 @@ http.createServer(function(req, res) {
       if (fileLocation) {
         sendDumpFile(fileLocation, downloadName);
       } else {
-        var datasetDir = process.env['CRAWL_DIR'] + '/' + pathname;
+        // console.log(pathname);
+        var datasetDir = process.env['CRAWL_DIR']
+          + '/'
+          + pathname.substring(0, 2)
+          + '/'
+          + pathname.substring(2);
+
         fs.exists(datasetDir, function(datasetDirExists) {
           if (!datasetDirExists) {
             utils.sendReponse(res, 404, 'Dataset not found');
