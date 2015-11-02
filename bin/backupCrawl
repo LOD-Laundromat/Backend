@@ -1,6 +1,4 @@
 #!/bin/bash
 #backup crawl
-rsync -avz --include '*.gz' --exclude '/*/*/' /scratch/lodlaundromat/crawls/12/ /home/lodlaundromat/backup/crawl-12/
+rsync -avz --include '*.gz' --exclude '/*/*/' $CRAWL_DIR/ $BACKUP_DIR/crawl-$CRAWL_ID/
 #backup of virtuoso is done by root crontab
-
-

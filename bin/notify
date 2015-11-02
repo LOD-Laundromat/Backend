@@ -3,5 +3,5 @@
 sleep 5;
 
 md5=`pathToMd5 $1`
-curl http://notify.$domain/check?md5=$md5
+curl http://notify.$DOMAIN/check?md5=$md5
 exit 0;

@@ -1,6 +1,6 @@
 #!/bin/bash
 hdtQueue="$TMP_DIR/hdtQueue.txt"
-#touch /home/lodlaundromat/wm-callback.touch
+
 [ -z "$1" ] && echo "No dataset provided as argument" && exit 1;
 md5=`pathToMd5 $1`
 
@@ -10,19 +10,12 @@ makeHdt $1
 #queue hdt file for ldf update
 echo $1 >> $hdtQueue;
 
-#analyze directory (for now, only for gzipped files smaller than 1.5 Gb. had some scalability issues)
-#size=`stat --printf="%s" $1/clean.*.gz`
-#if [ $size -lt 1500000000 ]; then
-	echo "Creating C-LOD file ($1)"
-	streamDataset $1
-	echo "Creating model"
-	createModel $1
-	echo "Storing model"
-	storeModel $1
-#else
-	echo "doing only lightweight clod analysis"
-	streamDatasetLight $1
-#fi
+echo "Creating C-LOD file ($1)"
+streamDataset $1
+echo "Creating model"
+createModel $1
+echo "Storing model"
+storeModel $1
 
 echo "Adding provenance to SPARQL"
 updateModelsViaSparql
@@ -32,11 +25,11 @@ updateModelsViaSparql
 
 echo "Adding dataset to rocksdb index"
 subPath=`md5ToPath $md5`
-node ~/Git/anytime/node/addDatasetToRocksdb.js $METRIC_DIR/$subPath;
+addDatasetToRocksdb.js $METRIC_DIR/$subPath;
 
 
 echo "Adding dataset literals to elasticsearch"
-/home/lodlaundromat/Git/frank_elasticsearch/incremental_index.sh http://download.lodlaundromat.org/$md5
+incremental_index.sh http://download.lodlaundromat.org/$md5
 
 echo "Notify users"
 #do this as a daemon: we need to set this -after- the 'endClean' val has been set (i.e. after this script ends)

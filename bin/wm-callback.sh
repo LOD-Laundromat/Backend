@@ -1,9 +1,5 @@
 #!/bin/bash
-
-
-
 [ -z "$1" ] && echo "No dataset provided as argument" && exit 1;
 
 renice -n 10 $$
-/home/lodlaundromat/bin/wm-callback-verbose.sh $1 >> /home/lodlaundromat/log/wmCallback.log 2>> /home/lodlaundromat/log/wmCallback.err;
-
+wm-callback-verbose.sh $1 >> $LOG_DIR/wmCallback.log 2>> $LOG_DIR/wmCallback.err;
