@@ -7,8 +7,7 @@ module.exports = {
 				  'Content-Length': reasonPhrase.length,
 				  'Content-Type': 'text/plain'
 				});
-				response.write(reasonPhrase);
-				response.end();
+				response.end(reasonPhrase);
 			} else {
 				console.log("nu http-response: " + statusCode + " - " + reasonPhrase);
 			}
