@@ -2,13 +2,6 @@
 [ -z "$1" ] && echo "No dataset dir provided as argument" && exit 1;
 sleep 5;
 
-partialMd5=`basename $1`
-parentDir=`dirname $1`
-chunkName=`basename $parentDir`
-md5="$chunkName$partialMd5"
-if [ ! ${#md5} -eq "32" ]; then
-  echo "Invalid length of md5 $md5";
-  exit 1;
-fi
-curl http://notify.lodlaundromat.d2s.labs.vu.nl/check?md5=$md5
+md5=`pathToMd5 $1`
+curl http://notify.$domain/check?md5=$md5
 exit 0;
