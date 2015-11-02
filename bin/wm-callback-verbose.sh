@@ -11,12 +11,30 @@ echo $1 >> $hdtQueue;
 
 #analyze directory (for now, only for gzipped files smaller than 1.5 Gb. had some scalability issues)
 size=`stat --printf="%s" $1/clean.*.gz`
-if [ $size -lt 1500000000 ]; then
+#if [ $size -lt 1500000000 ]; then
 	echo "Creating C-LOD file ($1)"
 	streamDataset $1
+	echo "Creating model"
 	createModel $1
+	echo "Storing model"
 	storeModel $1
- fi
+#else
+	echo "doing only lightweight clod analysis"
+	streamDatasetLight $1
+#fi
+
+echo "Adding provenance to SPARQL"
+updateModelsViaSparql
+
+
+
+
+echo "Adding dataset to rocksdb index"
+node ~/Git/anytime/node/addDatasetToRocksdb.js $METRIC_DIR/$md5;
+
+
+echo "Adding dataset literals to elasticsearch"
+/home/lodlaundromat/Git/frank_elasticsearch/incremental_index.sh http://download.lodlaundromat.org/$md5
 
 echo "Notify users"
 #do this as a daemon: we need to set this -after- the 'endClean' val has been set (i.e. after this script ends)
