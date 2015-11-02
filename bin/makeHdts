@@ -1,7 +1,10 @@
 #!/bin/bash
 
-dataDumps=/scratch/lodlaundromat/crawls/12/
+dataDumps=$CRAWL_DIR
 
-for dataDir in $dataDumps/*; do
-    makeHdt $dataDir;
+for chunkDir in $dataDumps/*; do
+    echo "processing chunk $chunkDir"
+    for dataDir in $chunkDir/*; do
+        makeHdt $dataDir;
+    done
 done
