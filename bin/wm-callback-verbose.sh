@@ -1,8 +1,9 @@
 #!/bin/bash
-hdtQueue="/scratch/lodlaundromat/tmp/hdtQueue.txt"
+hdtQueue="$TMP_DIR/hdtQueue.txt"
 #touch /home/lodlaundromat/wm-callback.touch
 [ -z "$1" ] && echo "No dataset provided as argument" && exit 1;
-md5=`basename $1`
+md5=`pathToMd5 $1`
+
 echo "Generating HDT file ($1)"
 makeHdt $1
 
@@ -10,7 +11,7 @@ makeHdt $1
 echo $1 >> $hdtQueue;
 
 #analyze directory (for now, only for gzipped files smaller than 1.5 Gb. had some scalability issues)
-size=`stat --printf="%s" $1/clean.*.gz`
+#size=`stat --printf="%s" $1/clean.*.gz`
 #if [ $size -lt 1500000000 ]; then
 	echo "Creating C-LOD file ($1)"
 	streamDataset $1
@@ -30,7 +31,8 @@ updateModelsViaSparql
 
 
 echo "Adding dataset to rocksdb index"
-node ~/Git/anytime/node/addDatasetToRocksdb.js $METRIC_DIR/$md5;
+subPath=`md5ToPath $md5`
+node ~/Git/anytime/node/addDatasetToRocksdb.js $METRIC_DIR/$subPath;
 
 
 echo "Adding dataset literals to elasticsearch"
