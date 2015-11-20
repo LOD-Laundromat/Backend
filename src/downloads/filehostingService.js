@@ -17,39 +17,50 @@ if (!fs.existsSync(process.env['LOG_DIR'])) throw new Error("Logging dir (" + pr
 
 
 
-
+var contentTypes = {
+  ntriples: 'application/n-triples',
+  nquads: 'application/n-quads',
+  hdt: 'application/octet-stream'
+}
 /**
  * Run file hosting server
  */
 http.createServer(function(req, res) {
-  var setResHeader = function(file) {
+  var setResHeader = function(file, contentType) {
     res.setHeader('Content-disposition', 'attachment; filename=' + pathname + file.slice(-6));
-    res.setHeader('Content-Type', "application/x-gzip");
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Encoding', "gzip");
     res.writeHead(200);
   }
-  var sendDatasetFile = function(file) {
+  var sendDatasetFile = function(file, contentType) {
     var stream = fs.createReadStream(file);
     stream.on('error', function(error) {
       utils.sendReponse(res, 500, 'Unable to send gzip file');
     });
-    setResHeader(file);
+    setResHeader(file, contentType);
     //I know last 6 chars are extension (either nt.gz or nq.gz). Just use this knowledge (won't change)
     stream.pipe(res);
     utils.logline('downloads.log', [req.headers["user-agent"], pathname]);
   };
+  /**
+  send meta-data dump file
+  **/
   var sendDumpFile = function(file, filename) {
-    var contentType = "application/x-gzip";
+    var contentType = (filename.indexOf(".nq.") >= 0) ? contentTypes.nquads:  contentTypes.ntriples);
     var stream = fs.createReadStream(file);
     stream.on('error', function(error) {
       utils.sendReponse(res, 500, 'Unable to send gzip file');
-
     });
     res.setHeader('Content-disposition', 'attachment; filename=' + filename);
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Encoding', "gzip");
     res.writeHead(200);
     stream.pipe(res);
     utils.logline('downloads.log', [req.headers["user-agent"], filename]);
   };
+  /**
+  get meta-data dump file
+  **/
   var getDumpFile = function(path, callback) {
     if (path.indexOf(config.datadumps.extension, path.length - config.datadumps.extension.length) != -1) {
       var base = path.substring(0, path.length - config.datadumps.extension.length);
@@ -74,6 +85,8 @@ http.createServer(function(req, res) {
   };
   var parsedUrl = url.parse(req.url, true);
   var pathname = path.basename(parsedUrl.pathname);
+
+  var contentType =
   var extension = ".nt.gz";
   if (parsedUrl.query && parsedUrl.query.type) {
     if (parsedUrl.query.type == "hdt") {
@@ -85,7 +98,8 @@ http.createServer(function(req, res) {
   } else {
     var dumpFile = getDumpFile(pathname, function(fileLocation, downloadName) {
       if (fileLocation) {
-        sendDumpFile(fileLocation, downloadName);
+        //location of metadata dump
+        return sendDumpFile(fileLocation, downloadName);
       } else {
         // console.log(pathname);
         var datasetDir = process.env['CRAWL_DIR']
@@ -110,7 +124,7 @@ http.createServer(function(req, res) {
                     //no nq file AND no nt file..
                     utils.sendReponse(res, 404, 'No cleaned file found for this dataset.');
                   } else {
-                    sendDatasetFile(nqFile);
+                    sendDatasetFile(nqFile, contentTypes.nquads);
                   }
                 });
               } else {
@@ -118,10 +132,10 @@ http.createServer(function(req, res) {
               }
             } else {
               if (req.method == "HEAD") {
-                setResHeader(cleanFile);
+                setResHeader(cleanFile, contentTypes.ntriples);
                 return res.end();
               }
-              sendDatasetFile(cleanFile);
+              sendDatasetFile(cleanFile, contentTypes.ntriples);
             }
 
           });
