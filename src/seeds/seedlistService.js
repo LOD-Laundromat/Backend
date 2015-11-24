@@ -195,7 +195,7 @@ http.createServer(function (req, res) {
 	}
 
 }).listen(config.seedlistUpdater.port);
-util.puts('> Seed list backend running on ' + config.seedlistUpdater.port);
+console.log('> Seed list backend running on ' + config.seedlistUpdater.port);
 
 
 function sleep(seconds, callback) {
