@@ -28,8 +28,8 @@ subPath=`md5ToPath $md5`
 addDatasetToRocksdb.js $METRIC_DIR/$subPath;
 
 
-echo "Adding dataset literals to elasticsearch"
-incremental_index.sh http://download.lodlaundromat.org/$md5
+#echo "Adding dataset literals to elasticsearch"
+#incremental_index.sh http://download.lodlaundromat.org/$md5
 
 echo "Notify users"
 #do this as a daemon: we need to set this -after- the 'endClean' val has been set (i.e. after this script ends)
